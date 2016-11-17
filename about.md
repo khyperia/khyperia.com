@@ -11,7 +11,7 @@ You can find me lots of places. Chances are, if you find a wild khyperia somewhe
 * Twitter: [\@khyperia](https://twitter.com/khyperia), mostly code-related.
 * Github: [khyperia](https://github.com/khyperia).
 * Coding blog: [On github pages](https://khyperia.github.io/), long rants on code.
-* Tumblr: [khyperia](https://blog.khyperia.com/), for friends and other random stuff.
+* Tumblr: [khyperia](https://khyperia.tumblr.com/), for friends and other random stuff.
 * IRC: I hop around various networks as months go on, but I'll be khyperia wherever I am.
 * Email: khyperia (that one symbol, y'know) live.com - I don't need more spam from web crawlers finding my address :)
 
