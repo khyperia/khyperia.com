@@ -1,6 +1,6 @@
 md_files=$(shell find . -type f -name '*.md')
 html_files=$(md_files:.md=.html)
-dest_folder=/var/www/khyperia.com
+dest_folder=/srv/http
 
 .PHONY: all clean install
 
