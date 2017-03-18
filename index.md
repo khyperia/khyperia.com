@@ -7,12 +7,8 @@ I don't enjoy working with web things, so this is just plain markdown converted 
 
 ---
 
-Stuff:
-
 * [Tutorials](tutorials/) I've made, for when I've re-explained something to friends way too often for my sanity.
-* [Broomball](broomball.html) - Big unofficial overview of Broomball to be a primer for first-years on my team.
+* [Astrophotography archive](space/) of photos I've taken with my telescopes.
 * [My coding blog](https://khyperia.github.io/)
-
-Me:
-
 * [My about page](about.html), which contains words about me (and links to other sites).
+* [The source](https://github.com/khyperia/khyperia.com) to this website.
