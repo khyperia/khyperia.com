@@ -1,19 +1,17 @@
-md_files=$(shell find . -type f -name '*.md')
-html_files=$(md_files:.md=.html)
-extra_files=pandoc.css
-all_files=$(html_files) $(extra_files)
+source_files=$(shell find . -type f -a \( -name '*.md' -o -name '*.css' -o -name '*.txt' \) )
+built_files=$(md_files:.md=.html)
 dest_folder=/srv/http
 
 .PHONY: all clean install
 
-all: $(all_files)
+all: $(built_files)
 
 %.html: %.md pandoc.css Makefile
 	pandoc -s --self-contained -c pandoc.css -f markdown -t html -o $@ $<
 
 install: all | $(dest_folder)
 	@echo Invoking sudo to copy files...
-	sudo cp --parents $(all_files) $(dest_folder)
+	sudo cp --parents $(built_files) $(dest_folder)
 
 clean:
 	rm -f $(shell find . -type f -name '*.html')

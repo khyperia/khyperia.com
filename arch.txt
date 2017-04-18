@@ -1,0 +1,84 @@
+file /sys/firmware/efi/efivars
+lsblk
+cgdisk
+> EFI 512 MiB, "EFI System" (EF00)
+> linux partition
+mkfs.fat -F32 /dev/the_efi
+mkfs.ext4 /dev/the_linux
+mount /dev/the_linux /mnt
+mkdir /mnt/boot
+mount /dev/the_efi /mnt/boot
+> /etc/pacman.d/mirrorlist
+pacstrap /mnt base base-devel intel-ucode efibootmgr zsh neovim tmux unison bind-tools aspell-en
+genfstab -U /mnt > /mnt/etc/fstab
+> 'noatime' to fstab mount options
+cp arch.txt /mnt/root
+arch-chroot /mnt
+efibootmgr -d /dev/the_efi -p part -c -L 'Arch Linux' -l '/vmlinux-linux' -u 'initrd=/intel-ucode.img initrd=/initramfs-linux.img root=/dev/the_linux rw'
+> /etc/locale.gen -> en_US.UTF-8 UTF-8
+locale-gen
+> /etc/locale.conf -> LANG=en_US.UTF-8
+> /etc/hostname -> :)
+> wpa_supplicant-wifi.conf
+> 10-wifi.link
+> wifi.network
+systemctl enable --now fstrim.timer
+systemctl enable --now systemd-networkd
+systemctl enable --now systemd-resolved
+systemctl enable --now wpa_supplicant@wifi
+ln -s /usr/share/zoneinfo/America/Detroit /etc/localtime
+ln -s /run/systemd/resolve/resolve.conf /etc/resolv.conf
+timedatectl set-ntp 1
+passwd
+useradd -s /usr/bin/zsh -G wheel,tty,disk,uucp,video,audio,input khyperia
+passwd khyperia
+EDITOR=nvim visudo
+> %wheel ALL=(ALL) ALL
+cp arch.txt /mnt/home/khyperia
+chown khyperia:khyperia /mnt/home/khyperia/arch.txt
+sudo -u khyperia -i
+ssh-keygen
+ssh-copy-id carbon.khyperia.com
+scp -r carbon.khyperia.com:.unison/*.* .unison
+unison carbon
+
+---
+/etc/wpa_supplicant/wpa_supplicant-wifi.conf
+---
+interface=DIR=/var/run/wpa_supplicant GROUP=wheel
+update_config=1
+
+network={
+        ssid="MichiganTech"
+        key_mgmt=WPA-EAP
+        eap=PEAP
+        identity=""
+        password=""
+        phase2="auth=MSCHAPV2"
+}
+---
+
+---
+/etc/systemd/network/10-wifi.link
+---
+[Match]
+MACAddress=d0:7e:35:88:c0:f2
+[Link]
+Name=wifi
+---
+
+---
+/etc/systemd/network/wifi.network
+---
+[Match]
+Name=wifi
+[Network]
+DHCP=yes
+---
+
+---
+/etc/pacman.d/mirrorlist
+---
+#Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch
+Server = https://lug.mtu.edu/archlinux/$repo/os/$arch
+---
