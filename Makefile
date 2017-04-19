@@ -1,5 +1,5 @@
 source_files=$(shell find . -type f -a \( -name '*.md' -o -name '*.css' -o -name '*.txt' \) )
-built_files=$(md_files:.md=.html)
+built_files=$(source_files:.md=.html)
 dest_folder=/srv/http
 
 .PHONY: all clean install
