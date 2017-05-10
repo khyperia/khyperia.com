@@ -4,7 +4,7 @@ pagetitle: About
 
 Hi, I'm khy, she/her/hers.
 
-I am currently a student at Michigan Tech studying computer science, and starting this summer (2017) I will be working on the C#/VB compiler team at Microsoft.
+I work on the C#/VB compiler team at Microsoft, and graduated from Michigan Tech studying computer science.
 
 You can find me lots of places. Chances are, if you find a wild khyperia somewhere, it's me. Here's some common ones:
 
