@@ -7,7 +7,7 @@ dest_folder=/srv/http
 all: $(built_files)
 
 %.html: %.md pandoc.css Makefile
-	pandoc -s --self-contained -c pandoc.css -f markdown -t html -o $@ $<
+	pandoc -s -c /pandoc.css -f markdown -t html -o $@ $<
 
 install: all | $(dest_folder)
 	@echo Invoking sudo to copy files...
