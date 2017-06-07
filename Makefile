@@ -1,3 +1,4 @@
+SHELL:=/bin/bash
 source_files=$(shell find . -type f -a \( -name '*.md' -o -name '*.css' -o -name '*.txt' \) )
 built_files=$(source_files:.md=.html)
 dest_folder=/srv/http
@@ -15,3 +16,6 @@ install: all | $(dest_folder)
 
 clean:
 	rm -f $(shell find . -type f -name '*.html')
+
+diff:
+	comm -23 <(cd $(dest_folder); find . -type f | sort) <(printf '%s\n' $(built_files) | sort)
