@@ -1,5 +1,5 @@
 SHELL:=/bin/bash
-source_files=$(shell find . -type f -a \( -name '*.md' -o -name '*.css' -o -name '*.txt' \) )
+source_files=$(shell find . -type l -o -type f -a \( -name '*.md' -o -name '*.css' -o -name '*.txt' \) )
 built_files=$(source_files:.md=.html)
 dest_folder=/srv/http
 
@@ -12,10 +12,10 @@ all: $(built_files)
 
 install: all | $(dest_folder)
 	@echo Invoking sudo to copy files...
-	sudo cp --parents $(built_files) $(dest_folder)
+	sudo rsync --verbose --links --relative $(built_files) $(dest_folder)
 
 clean:
 	rm -f $(shell find . -type f -name '*.html')
 
 diff:
-	comm -23 <(cd $(dest_folder); find . -type f | sort) <(printf '%s\n' $(built_files) | sort)
+	comm -3 <(cd $(dest_folder); find . -not -type d | sort) <(printf '%s\n' $(built_files) | sort)
