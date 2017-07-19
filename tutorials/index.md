@@ -1,6 +1,3 @@
----
-pagetitle: Tutorials
----
 Tutorials
 ===
 

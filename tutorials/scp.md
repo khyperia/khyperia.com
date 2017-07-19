@@ -1,6 +1,3 @@
----
-pagetitle: SCP tutorial
----
 Copying files to/from Guardian/Colossus
 ===
 

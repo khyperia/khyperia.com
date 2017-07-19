@@ -1,6 +1,3 @@
----
-pagetitle: SSH alias and autologin tutorial
----
 Creating an SSH alias and setting up auto-login
 ===
 

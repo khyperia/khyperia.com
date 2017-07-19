@@ -1,6 +1,3 @@
----
-pagetitle: Fractals
----
 Yay, fractals! Hopefully your browser doesn't explode displaying this page.
 
 These were rendered by various versions of my fractal raytracing program. [More fractals are located here.](https://imgur.com/a/rmM4v)
@@ -11,10 +8,16 @@ r !ls fractals
 -->
 
 <style>
-.figure {
-    position: relative;
-    width: 90vw;
-    left: calc(-45vw + 50%);
+body {
+    max-width: 90%;
+}
+p {
+    text-align: center;
+}
+img {
+    max-height: 95vh;
+    width: auto;
+    height: auto;
 }
 </style>
 
