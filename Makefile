@@ -8,7 +8,8 @@ dest_folder=/srv/http
 all: $(built_files)
 
 %.html: %.md Makefile
-	(echo "<html>"; cat head.template; echo "<body>"; markdown $<; echo "</body>"; echo "</html>") > $@
+	@echo "$< -> $@"
+	@(echo "<html>"; TITLE=$* envsubst < head.template; echo "<body>"; markdown $<; echo "</body>"; echo "</html>") > $@
 
 install: all | $(dest_folder)
 	@echo Invoking sudo to copy files...

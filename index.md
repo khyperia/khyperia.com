@@ -7,6 +7,6 @@ I don't enjoy working with web things, so this is just plain markdown converted 
 * [My about page](about.html), which contains words about me (and links to other sites).
 * [Astrophotography archive](space/) of photos I've taken with my telescopes.
 * [Raytraced fractals](fractals.html) I made with my program. [Some more are here](https://imgur.com/a/rmM4v).
-* [My coding blog](https://khyperia.github.io/)
+* [My coding blog](blog/)
 * [Tutorials](tutorials/) I've made, for when I've re-explained something to friends way too often for my sanity.
 * [The source](https://github.com/khyperia/khyperia.com) to this website.

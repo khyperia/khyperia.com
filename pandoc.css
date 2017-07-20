@@ -9,7 +9,7 @@ html {
 
 body {
     color: #444;
-    font-family: Georgia, Palatino, 'Palatino Linotype', Times, 'Times New Roman', serif;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 12px;
     line-height: 1.7;
     padding: 1em;
@@ -114,19 +114,16 @@ blockquote {
 
 hr {
     display: block;
-    height: 2px;
     border: 0;
     border-top: 1px solid #aaa;
     border-bottom: 1px solid #eee;
-    margin: 1em 0;
     padding: 0;
 }
 
 pre, code, kbd, samp {
-    background-color: #eee; /* khyperia */
+    background-color: #eee;
     color: #000;
-    font-family: monospace, monospace;
-    _font-family: 'courier new', monospace;
+    font-family: monospace;
     font-size: 0.98em;
 }
 
@@ -135,8 +132,8 @@ pre {
     white-space: pre-wrap;
     word-wrap: break-word;
     padding-left: .5em;
-    margin-left: 1em; /* khyperia */
-    margin-right: 1em; /* khyperia */
+    margin-left: 1em;
+    margin-right: 1em;
 }
 
 b, strong {
