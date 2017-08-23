@@ -4,12 +4,12 @@ cgdisk
 > EFI 512 MiB, "EFI System" (EF00)
 > linux partition
 mkfs.fat -F32 /dev/the_efi
-mkfs.ext4 /dev/the_linux
+mkfs.btrfs /dev/the_linux
 mount /dev/the_linux /mnt
 mkdir /mnt/boot
 mount /dev/the_efi /mnt/boot
 > /etc/pacman.d/mirrorlist
-pacstrap /mnt base base-devel aspell-en bind-tools efibootmgr git intel-ucode neovim openssh pkgfile tmux unison wpa_supplicant zsh
+pacstrap /mnt base base-devel aspell-en bind-tools btrfs-progs efibootmgr git grub intel-ucode lighttpd markdown mosh neovim openssh openssl-1.0 pass pkgfile python python2 rsync tmux unison weechat wget wpa_supplicant zsh
 genfstab -U /mnt > /mnt/etc/fstab
 > 'noatime' to fstab mount options
 cp arch.txt /mnt/root
@@ -26,7 +26,7 @@ systemctl enable --now fstrim.timer
 systemctl enable --now systemd-networkd
 systemctl enable --now systemd-resolved
 systemctl enable --now wpa_supplicant@wifi
-ln -s /usr/share/zoneinfo/America/Detroit /etc/localtime
+ln -s /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
 ln -s /run/systemd/resolve/resolve.conf /etc/resolv.conf
 timedatectl set-ntp 1
 passwd
@@ -38,10 +38,10 @@ cp arch.txt /mnt/home/khyperia
 chown khyperia:khyperia /mnt/home/khyperia/arch.txt
 sudo -u khyperia -i
 ssh-keygen
-ssh-copy-id -p port carbon.khyperia.com
-scp -P port 'carbon.khyperia.com:.unison/*.*' .unison/
-scp -P port 'carbon.khyperia.com:.ssh/config' .ssh/
-unison carbon
+ssh-copy-id -p port khyperia.com
+scp -P port 'khyperia.com:.ssh/config' .ssh/
+scp 'carbon:.unison/*.*' .unison/
+unison
 
 ---
 /etc/wpa_supplicant/wpa_supplicant-wifi.conf
@@ -80,6 +80,6 @@ DHCP=yes
 ---
 /etc/pacman.d/mirrorlist
 ---
-#Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch
-Server = https://lug.mtu.edu/archlinux/$repo/os/$arch
+Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch
+#Server = https://lug.mtu.edu/archlinux/$repo/os/$arch
 ---

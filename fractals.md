@@ -23,6 +23,14 @@ img {
 
 ---
 
+![](fractals/glare.png)
+
+---
+
+![](fractals/icecreamscoop.png)
+
+---
+
 ![](fractals/angle.png)
 
 ---
