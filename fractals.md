@@ -172,3 +172,9 @@ img {
 ---
 
 ![](fractals/watchers.png)
+
+---
+
+![](https://i.creativecommons.org/l/by/4.0/88x31.png)
+
+The fractals rendered by me, on this page, and the above imgur album, are under the [Creative Commons Attribution 4.0 International License](http://creativecommons.org/licenses/by/4.0/).
