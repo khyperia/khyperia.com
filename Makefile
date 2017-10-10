@@ -5,7 +5,7 @@ f_files:=$(shell find ./f -type f)
 built_files:=$(source_files:.md=.html) $(mlpds_html_files) $(f_files)
 dest_folder:=/srv/http
 
-.PHONY: all clean install
+.PHONY: all clean install diff
 
 all: $(built_files)
 
