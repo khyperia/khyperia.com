@@ -23,6 +23,14 @@ img {
 
 ---
 
+![](fractals/aesthetic.png)
+
+---
+
+![](fractals/rail.png)
+
+---
+
 ![](fractals/glare.png)
 
 ---
