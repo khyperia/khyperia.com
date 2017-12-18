@@ -11,11 +11,11 @@ all: $(built_files)
 
 %.html: %.md Makefile
 	@echo "$< -> $@"
-	@(echo "<html>"; TITLE=$* envsubst < head.template; echo "<body>"; markdown $<; echo "</body>"; echo "</html>") > $@
+	@(echo "<html>"; TITLE="&#10084; $(subst /index,/,/$*)" envsubst < head.template; echo "<body>"; markdown $<; echo "</body>"; echo "</html>") > $@
 
 install: all | $(dest_folder)
 	@echo Invoking sudo to copy files...
-	sudo rsync --verbose --links --relative $(built_files) $(dest_folder)
+	sudo rsync --verbose --links --times --relative $(built_files) $(dest_folder)
 
 diff:
 	comm -3 <(cd $(dest_folder); find . -not -type d | sort) <(printf '%s\n' $(built_files) | sort)

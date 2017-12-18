@@ -1,6 +1,6 @@
 Hi, you've reached \[ [khyperia.com](https://khyperia.com) | [acefrom.space](https://acefrom.space) \], please leave a message after the tone.
 
-I don't enjoy working with web things, so this is just plain markdown converted to html with [markdown.pl](http://daringfireball.net/projects/markdown/) and [css inspired from this](https://gist.github.com/killercup/5917178). (Hey, it loads insanely fast, though!)
+Web things are difficult, so this is just plain markdown converted to html with [discount](https://github.com/Orc/discount) and [css inspired from this](https://gist.github.com/killercup/5917178). (Hey, it loads insanely fast, though!)
 
 ---
 
