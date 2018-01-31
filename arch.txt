@@ -9,7 +9,7 @@ mount /dev/the_linux /mnt
 mkdir /mnt/boot
 mount /dev/the_efi /mnt/boot
 > /etc/pacman.d/mirrorlist
-pacstrap /mnt base base-devel aspell-en bind-tools btrfs-progs efibootmgr git grub intel-ucode lighttpd markdown mosh neovim openssh openssl-1.0 pass pkgfile python python2 rsync tmux unison weechat wget wpa_supplicant zsh
+pacstrap /mnt base base-devel aspell-en bind-tools btrfs-progs efibootmgr git intel-ucode lighttpd mosh neovim openssh pass pkgfile python rsync tmux unison weechat wpa_supplicant zsh
 genfstab -U /mnt > /mnt/etc/fstab
 > 'noatime' to fstab mount options
 cp arch.txt /mnt/root

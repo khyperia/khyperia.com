@@ -1,12 +1,13 @@
 Tutorials
 ===
 
-These exist to be a reference to friends I'm helping at my university (Michigan Tech). Information is probably going to be specific to that university, but likely in name only (domain names, etc.)
+These exist to be a reference to friends I'm helping at my university (Michigan Tech). Information is probably going to be specific to that university, but likely in name only (domain names, etc.).  Information will be omitted to the point of being questionably accurate, as these are directed towards "just get the thing to work" and not "learn the inner workings and how to do everything ever". (i.e. please don't judge me based on the contents of these)
 
-Also, information will be omitted to the point of being questionably accurate, as these are directed towards "just get the thing to work" and not "learn the inner workings and how to do everything ever". (i.e. please don't judge me based on the contents of these)
+Also, random tutorial stuff is smashed in here too!
 
 * [Setting up a nice alias and auto-login to Guardian/Colossus](ssh_keygen.html)
 * [Copying files to/from Guardian/Colossus](scp.html)
+* [Installing Ubersystem locally](uber.html)
 
 ---
 

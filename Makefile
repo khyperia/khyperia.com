@@ -1,8 +1,8 @@
 SHELL:=/bin/bash
 source_files:=$(shell find . -type l -o -type f -a \( -name '*.md' -o -name '*.css' -o -name '*.txt' -o -name '*.jpg' \) )
-kept_html_files:=$(shell find ./mlpds ./spacerunner4 -type f -name '*.html')
+kept_html_files:=$(shell find ./mlpds ./spacerunner4 -type f \( -name '*.html' -o -name '*.js' \))
 f_files:=$(shell find ./f -type f)
-built_files:=$(source_files:.md=.html) $(mlpds_html_files) $(f_files)
+built_files:=$(source_files:.md=.html) $(kept_html_files) $(f_files)
 dest_folder:=/srv/http
 
 .PHONY: all clean install diff
