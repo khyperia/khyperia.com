@@ -23,6 +23,10 @@ img {
 
 ---
 
+![](fractals/arch_canyon.png)
+
+---
+
 ![](fractals/aesthetic.png)
 
 ---
