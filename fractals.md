@@ -7,20 +7,6 @@ r !ls fractals
 %s/^\(.*\)\.png$/![](fractals\/\1.png)\r/
 -->
 
-<style>
-body {
-    max-width: 90%;
-}
-p {
-    text-align: center;
-}
-img {
-    max-height: 95vh;
-    width: auto;
-    height: auto;
-}
-</style>
-
 ---
 
 ![](fractals/arch_canyon.png)

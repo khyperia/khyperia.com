@@ -5,7 +5,7 @@ Web things are difficult, so this is just plain markdown converted to html with 
 ---
 
 * [My about page](about.html), which contains words about me (and links to other sites).
-* [Astrophotography archive](space/) of photos I've taken with my telescopes.
+* [Astrophotography gallery](space.html) of photos I've taken with my telescopes, and the [archive of all raw space data](space/).
 * [Raytraced fractals](fractals.html) I made with my program. [Some more are here](https://imgur.com/a/rmM4v).
 * [My coding blog](blog/)
 * [Tutorials](tutorials/) I've made, for when I've re-explained something to friends way too often for my sanity.
