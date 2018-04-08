@@ -8,6 +8,7 @@ Also, random tutorial stuff is smashed in here too!
 * [Setting up a nice alias and auto-login to Guardian/Colossus](ssh_keygen.html)
 * [Copying files to/from Guardian/Colossus](scp.html)
 * [Installing Ubersystem locally](uber.html)
+* [Renaming the author in git commits](rename_commits.html)
 
 ---
 
