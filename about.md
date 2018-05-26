@@ -1,6 +1,6 @@
 Hi, I'm khy, she/her/hers.
 
-I'm currently at [pulumi](http://pulumi.com/), used to work on the C#/VB compiler team at Microsoft, and graduated from Michigan Tech studying computer science.
+I'm currently at Microsoft on the C#/VB compiler team, and graduated from Michigan Tech studying computer science.
 
 You can find me lots of places. Chances are, if you find a wild khyperia somewhere, it's me. Here are some common ones:
 

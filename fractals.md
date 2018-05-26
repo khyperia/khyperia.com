@@ -2,10 +2,9 @@ Yay, fractals! Hopefully your browser doesn't explode displaying this page.
 
 These were rendered by various versions of my fractal raytracing program. [More fractals are located here.](https://imgur.com/a/rmM4v)
 
-<!---
-r !ls fractals
-%s/^\(.*\)\.png$/![](fractals\/\1.png)\r/
--->
+---
+
+![](fractals/shiny.png)
 
 ---
 
