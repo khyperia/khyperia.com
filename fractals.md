@@ -4,171 +4,163 @@ These were rendered by various versions of my fractal raytracing program. [More 
 
 ---
 
-![](fractals/shiny.png)
+[![](/image/shiny.png)](fractals/shiny.png)
 
 ---
 
-![](fractals/arch_canyon.png)
+[![](/image/arch_canyon.png)](fractals/arch_canyon.png)
 
 ---
 
-![](fractals/aesthetic.png)
+[![](/image/aesthetic.png)](fractals/aesthetic.png)
 
 ---
 
-![](fractals/rail.png)
+[![](/image/rail.png)](fractals/rail.png)
 
 ---
 
-![](fractals/glare.png)
+[![](/image/angle.png)](fractals/angle.png)
 
 ---
 
-![](fractals/icecreamscoop.png)
+[![](/image/bridge.png)](fractals/bridge.png)
 
 ---
 
-![](fractals/angle.png)
+[![](/image/burst.png)](fractals/burst.png)
 
 ---
 
-![](fractals/bridge.png)
+[![](/image/canyon.png)](fractals/canyon.png)
 
 ---
 
-![](fractals/burst.png)
+[![](/image/city.png)](fractals/city.png)
 
 ---
 
-![](fractals/canyon.png)
+[![](/image/construction.png)](fractals/construction.png)
 
 ---
 
-![](fractals/city.png)
+[![](/image/corner2.png)](fractals/corner2.png)
 
 ---
 
-![](fractals/construction.png)
+[![](/image/corner.png)](fractals/corner.png)
 
 ---
 
-![](fractals/corner2.png)
+[![](/image/energy.png)](fractals/energy.png)
 
 ---
 
-![](fractals/corner.png)
+[![](/image/fire.png)](fractals/fire.png)
 
 ---
 
-![](fractals/energy.png)
+[![](/image/flight.png)](fractals/flight.png)
 
 ---
 
-![](fractals/fire.png)
+[![](/image/fog4.png)](fractals/fog4.png)
 
 ---
 
-![](fractals/flight.png)
+[![](/image/fuzz.png)](fractals/fuzz.png)
 
 ---
 
-![](fractals/fog4.png)
+[![](/image/ghost.png)](fractals/ghost.png)
 
 ---
 
-![](fractals/fuzz.png)
+[![](/image/giants.png)](fractals/giants.png)
 
 ---
 
-![](fractals/ghost.png)
+[![](/image/grilledCheese.png)](fractals/grilledCheese.png)
 
 ---
 
-![](fractals/giants.png)
+[![](/image/head.png)](fractals/head.png)
 
 ---
 
-![](fractals/grilledCheese.png)
+[![](/image/iris.png)](fractals/iris.png)
 
 ---
 
-![](fractals/head.png)
+[![](/image/lightfog.png)](fractals/lightfog.png)
 
 ---
 
-![](fractals/iris.png)
+[![](/image/pancakes.png)](fractals/pancakes.png)
 
 ---
 
-![](fractals/lightfog.png)
+[![](/image/pastel_big.png)](fractals/pastel_big.png)
 
 ---
 
-![](fractals/pancakes.png)
+[![](/image/pastel.png)](fractals/pastel.png)
 
 ---
 
-![](fractals/pastel_big.png)
+[![](/image/platforms.png)](fractals/platforms.png)
 
 ---
 
-![](fractals/pastel.png)
+[![](/image/rainbow.png)](fractals/rainbow.png)
 
 ---
 
-![](fractals/platforms.png)
+[![](/image/shadows.png)](fractals/shadows.png)
 
 ---
 
-![](fractals/rainbow.png)
+[![](/image/ship.png)](fractals/ship.png)
 
 ---
 
-![](fractals/shadows.png)
+[![](/image/snow.png)](fractals/snow.png)
 
 ---
 
-![](fractals/ship.png)
+[![](/image/space.png)](fractals/space.png)
 
 ---
 
-![](fractals/snow.png)
+[![](/image/spectrum.png)](fractals/spectrum.png)
 
 ---
 
-![](fractals/space.png)
+[![](/image/sphere.png)](fractals/sphere.png)
 
 ---
 
-![](fractals/spectrum.png)
+[![](/image/spindles.png)](fractals/spindles.png)
 
 ---
 
-![](fractals/sphere.png)
+[![](/image/sunshadow.png)](fractals/sunshadow.png)
 
 ---
 
-![](fractals/spindles.png)
+[![](/image/uh.png)](fractals/uh.png)
 
 ---
 
-![](fractals/sunshadow.png)
+[![](/image/underwater.png)](fractals/underwater.png)
 
 ---
 
-![](fractals/uh.png)
+[![](/image/underworld.png)](fractals/underworld.png)
 
 ---
 
-![](fractals/underwater.png)
-
----
-
-![](fractals/underworld.png)
-
----
-
-![](fractals/watchers.png)
+[![](/image/watchers.png)](fractals/watchers.png)
 
 ---
 

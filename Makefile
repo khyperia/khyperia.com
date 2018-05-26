@@ -1,5 +1,5 @@
 SHELL:=/bin/bash
-source_files:=$(shell find . -type l -o -type f -a \( -name '*.md' -o -name '*.css' -o -name '*.txt' -o -name '*.jpg' \) )
+source_files:=$(shell find . -type l -o -type f -a \( -name '*.md' -o -name '*.css' -o -name '*.txt' -o -name '*.jpg' -o -name '*.png' \) )
 kept_html_files:=$(shell find ./mlpds ./spacerunner4 -type f \( -name '*.html' -o -name '*.js' \))
 f_files:=$(shell find ./f -type f)
 built_files:=$(source_files:.md=.html) $(kept_html_files) $(f_files)
@@ -19,3 +19,9 @@ install: all | $(dest_folder)
 
 diff:
 	comm -3 <(cd $(dest_folder); find . -not -type d | sort) <(printf '%s\n' $(built_files) | sort)
+
+convert:
+	sed 's/!\[](\(.*\)\/\(.*\))/[![](\/image\/\2)](\1\/\2)/' -i $(shell find . -type f -name '*.md')
+
+resize:
+	rg '^.*\[!\[\]\(/?(.*)\)\]\(/?(.*)\).*$$' --replace='if [ ! -e "$$1" ]; then; echo "$$2" && convert "$$2" -resize 750x-1 "$$1"; fi' -g '*.md' --no-filename | zsh -
