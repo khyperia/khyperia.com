@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "outDir": "out",
+    "noImplicitAny": true,
+    "removeComments": true,
+    "preserveConstEnums": true
+  },
+  "include": [
+    "*.ts"
+  ]
+}
