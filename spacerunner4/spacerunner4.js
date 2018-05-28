@@ -6,6 +6,8 @@ var point_1 = require("./point");
 var marchingsquares_1 = require("./marchingsquares");
 var canvas = document.getElementById("mainCanvas");
 var ctx = canvas.getContext("2d");
+var seed = Math.random();
+perlin.seed(seed);
 var worldSize = (1 << 10) + 1;
 var gridSize = 32;
 var simplex_scale = 256;
@@ -15,6 +17,7 @@ var rot_damp = 8;
 var thrust = 75;
 var rotation = 32;
 var falloff_grids = 5;
+var max_reset = 0.75;
 var shipColors = [
     "DarkRed",
     "DarkOrange",
@@ -23,6 +26,26 @@ var shipColors = [
     "Blue",
     "Purple",
 ];
+var Settings = (function () {
+    function Settings() {
+        this.ship_color = shipColors[Math.floor(Math.random() * shipColors.length)];
+        this.spawn_point = this.choose_point();
+        this.target_point = this.choose_point();
+    }
+    Settings.prototype.choose_point = function () {
+        var point = new point_1.Point(0, 0);
+        do {
+            point = new point_1.Point((Math.random() * 2 - 1) * worldSize, (Math.random() * 2 - 1) * worldSize);
+        } while (sample_noise(point.x, point.y) < 1 - 0.5 * (1 - simplex_offset));
+        return point;
+    };
+    return Settings;
+}());
+function sample_noise(x, y) {
+    var outside_boundary = worldSize - falloff_grids * gridSize;
+    var outside = Math.max(x - outside_boundary, -x - outside_boundary, y - outside_boundary, -y - outside_boundary, 0.0) / (gridSize * falloff_grids);
+    return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - outside * outside * (1 + simplex_offset);
+}
 function sign(x) {
     if (x < 0) {
         return -1;
@@ -38,24 +61,39 @@ function has(arr, v) {
     return arr.some(function (x) { return x == v; });
 }
 var Camera = (function () {
-    function Camera(center) {
-        var offset = new point_1.Point(canvas.width / 2, canvas.height / 2);
-        this.delta = point_1.Point.sub(offset, center);
+    function Camera(center, scale) {
+        this.delta = point_1.Point.sub(new point_1.Point(0, 0), center);
+        this.scale = scale;
     }
     Camera.prototype.fill = function (poly, color) {
         ctx.fillStyle = color;
+        ctx.beginPath();
         this.drawImpl(poly);
+        ctx.closePath();
         ctx.fill();
     };
     Camera.prototype.draw = function (poly, color) {
         ctx.strokeStyle = color;
+        ctx.beginPath();
+        this.drawImpl(poly);
+        ctx.closePath();
+        ctx.stroke();
+    };
+    Camera.prototype.line = function (poly, color) {
+        ctx.strokeStyle = color;
+        ctx.beginPath();
         this.drawImpl(poly);
         ctx.stroke();
     };
+    Camera.prototype.transform = function (point) {
+        return point_1.Point.add(point_1.Point.mul(point_1.Point.add(point, this.delta), this.scale), new point_1.Point(canvas.width / 2, canvas.height / 2));
+    };
+    Camera.prototype.transform_scale = function (distance) {
+        return distance * this.scale;
+    };
     Camera.prototype.drawImpl = function (poly) {
-        ctx.beginPath();
         for (var index = 0; index < poly.length; index++) {
-            var element = point_1.Point.add(poly[index], this.delta);
+            var element = this.transform(poly[index]);
             if (index == 0) {
                 ctx.moveTo(element.x, element.y);
             }
@@ -63,39 +101,24 @@ var Camera = (function () {
                 ctx.lineTo(element.x, element.y);
             }
         }
-        ctx.closePath();
     };
     Camera.prototype.draw_segments = function (poly, color) {
         ctx.strokeStyle = color;
         ctx.beginPath();
         for (var _i = 0, poly_1 = poly; _i < poly_1.length; _i++) {
-            var _a = poly_1[_i], start = _a[0], end = _a[1];
-            ctx.moveTo(start.x + this.delta.x, start.y + this.delta.y);
-            ctx.lineTo(end.x + this.delta.x, end.y + this.delta.y);
+            var _a = poly_1[_i], start_world = _a[0], end_world = _a[1];
+            var start = this.transform(start_world);
+            var end = this.transform(end_world);
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
         }
         ctx.stroke();
     };
-    Camera.prototype.grid = function (color) {
+    Camera.prototype.circle = function (center, radius, color) {
         ctx.strokeStyle = color;
         ctx.beginPath();
-        for (var i = 0; i < canvas.width + gridSize; i += gridSize) {
-            var x = Math.floor((i - this.delta.x) / gridSize) * gridSize + this.delta.x;
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, canvas.height);
-        }
-        for (var i = 0; i < canvas.width + gridSize; i += gridSize) {
-            var y = Math.floor((i - this.delta.y) / gridSize) * gridSize + this.delta.y;
-            ctx.moveTo(0, y);
-            ctx.lineTo(canvas.width, y);
-        }
-        ctx.stroke();
-        ctx.strokeStyle = "red";
-        ctx.beginPath();
-        ctx.moveTo(-worldSize + this.delta.x, -worldSize + this.delta.y);
-        ctx.lineTo(worldSize + this.delta.x, -worldSize + this.delta.y);
-        ctx.lineTo(worldSize + this.delta.x, worldSize + this.delta.y);
-        ctx.lineTo(-worldSize + this.delta.x, worldSize + this.delta.y);
-        ctx.closePath();
+        var center_draw = this.transform(center);
+        ctx.arc(center_draw.x, center_draw.y, this.transform_scale(radius), 0, 2 * Math.PI);
         ctx.stroke();
     };
     return Camera;
@@ -114,11 +137,7 @@ var SimplexWorld = (function () {
     function SimplexWorld() {
         var mapped_start = Math.floor(worldSize / gridSize);
         var mapped_size = mapped_start * 2;
-        var outside_boundary = worldSize / gridSize - falloff_grids;
-        this.lines = marchingsquares_1.marching_squares(function (x, y) {
-            var outside = Math.max(x - outside_boundary, -x - outside_boundary, y - outside_boundary, -y - outside_boundary, 0.0) / falloff_grids;
-            return perlin.simplex2(x * gridSize / simplex_scale, y * gridSize / simplex_scale) + simplex_offset - outside * outside * (1 + simplex_offset);
-        }, mapped_size, mapped_size, -mapped_start, -mapped_start);
+        this.lines = marchingsquares_1.marching_squares(function (x, y) { return sample_noise(x * gridSize, y * gridSize); }, mapped_size, mapped_size, -mapped_start, -mapped_start);
         for (var _i = 0, _a = this.lines; _i < _a.length; _i++) {
             var item = _a[_i];
             item[0] = point_1.Point.mul(item[0], gridSize);
@@ -142,33 +161,38 @@ var SimplexWorld = (function () {
                 }
             }
         }
-        return cardinality % 2 !== 0;
+        return cardinality % 2 == 0;
     };
     return SimplexWorld;
 }());
+function ship_points(pos, rot) {
+    var radius = 10;
+    var theta = Math.PI * 4 / 5;
+    var offsets = [
+        new point_1.Point(Math.cos(rot + theta) * radius, Math.sin(rot + theta) * radius),
+        new point_1.Point(Math.cos(rot - theta) * radius, Math.sin(rot - theta) * radius),
+        new point_1.Point(Math.cos(rot) * radius, Math.sin(rot) * radius),
+    ];
+    for (var i = 0; i < offsets.length; i++) {
+        offsets[i] = point_1.Point.add(pos, offsets[i]);
+    }
+    return offsets;
+}
 var Ship = (function () {
-    function Ship(pos, rot) {
-        this.pos = pos;
+    function Ship(settings, world) {
+        this.pos = new point_1.Point(0, 0);
         this.vel = new point_1.Point(0, 0);
-        this.rot = rot;
+        this.rot = 0;
         this.rotVel = 0;
-        this.color = shipColors[Math.floor(Math.random() * shipColors.length)];
         this.throttle = false;
         this.rotating = 0;
-        this.lastUpdate = 0;
+        this.color = settings.ship_color;
+        this.world = world;
+        this.settings = settings;
+        this.respawn();
     }
     Ship.prototype.points = function () {
-        var radius = 10;
-        var theta = Math.PI * 4 / 5;
-        var offsets = [
-            new point_1.Point(Math.cos(this.rot + theta) * radius, Math.sin(this.rot + theta) * radius),
-            new point_1.Point(Math.cos(this.rot - theta) * radius, Math.sin(this.rot - theta) * radius),
-            new point_1.Point(Math.cos(this.rot) * radius, Math.sin(this.rot) * radius),
-        ];
-        for (var i = 0; i < offsets.length; i++) {
-            offsets[i] = point_1.Point.add(this.pos, offsets[i]);
-        }
-        return offsets;
+        return ship_points(this.pos, this.rot);
     };
     Ship.prototype.thrustPoints = function () {
         var radius = 10;
@@ -190,6 +214,23 @@ var Ship = (function () {
             camera.draw(this.thrustPoints(), "red");
         }
     };
+    Ship.prototype.test = function () {
+        for (var _i = 0, _a = this.points(); _i < _a.length; _i++) {
+            var point = _a[_i];
+            if (this.world.test(point)) {
+                return true;
+            }
+        }
+        return false;
+    };
+    Ship.prototype.respawn = function () {
+        this.pos = this.settings.spawn_point;
+        this.rot = 0;
+        this.rotVel = 0;
+        this.vel = new point_1.Point(0, 0);
+        this.throttle = false;
+        this.rotating = 0;
+    };
     Ship.prototype.update = function (deltaSeconds) {
         var my_speed_damp = 1 - speed_damp * deltaSeconds;
         var my_rot_damp = 1 - rot_damp * deltaSeconds;
@@ -208,6 +249,12 @@ var Ship = (function () {
         this.rotVel *= my_rot_damp;
         this.pos = point_1.Point.add(this.pos, point_1.Point.mul(this.vel, deltaSeconds));
         this.rot += this.rotVel * deltaSeconds;
+        if (this.test()) {
+            return true;
+        }
+        else {
+            return false;
+        }
     };
     Ship.prototype.updateMe = function (pressedKeys, deltaSeconds) {
         if (has(pressedKeys, 37) || has(pressedKeys, 65)) {
@@ -227,60 +274,163 @@ var Ship = (function () {
         }
         if (has(pressedKeys, 40) || has(pressedKeys, 83)) {
         }
-        this.update(deltaSeconds);
+        return this.update(deltaSeconds);
     };
     return Ship;
 }());
-function updateScene(ship, camera, pressedKeys, deltaSeconds) {
-    ship.updateMe(pressedKeys, deltaSeconds);
-    var toTrack = new point_1.Point(ship.pos.x + ship.vel.x * 2, ship.pos.y + ship.vel.y * 2);
-    camera.track(toTrack, deltaSeconds);
-}
-function drawScene(center, ship, simplexWorld) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    var camera = new Camera(center);
-    simplexWorld.draw(camera, ship.pos);
-    camera.grid("grey");
-    ship.draw(camera);
-}
-function resize() {
-    var width = canvas.clientWidth;
-    var height = canvas.clientHeight;
-    if (canvas.width != width ||
-        canvas.height != height) {
-        canvas.width = width;
-        canvas.height = height;
+var Target = (function () {
+    function Target(settings) {
+        this.pos = settings.target_point;
+        this.win = 0;
     }
-}
-var previousMillis = 0;
-var ship = new Ship(new point_1.Point(Math.random() * 100 - 50, Math.random() * 100 - 50), 0);
-var cameraTrack = new CameraTrack(ship.pos);
-var pressedKeys = new Array();
-var simplexWorld = new SimplexWorld();
-function frame(currentMillis) {
-    var deltaSeconds = (currentMillis - previousMillis) / 1000;
-    previousMillis = currentMillis;
-    deltaSeconds = Math.min(deltaSeconds, 1);
-    resize();
-    updateScene(ship, cameraTrack, pressedKeys, deltaSeconds);
-    drawScene(cameraTrack.point, ship, simplexWorld);
-    window.requestAnimationFrame(frame);
-}
-function keyDown(e) {
-    if (!has(pressedKeys, e.keyCode)) {
-        pressedKeys.push(e.keyCode);
-    }
-}
-function keyUp(e) {
-    for (var i = pressedKeys.length - 1; i >= 0; i--) {
-        if (pressedKeys[i] === e.keyCode) {
-            pressedKeys.splice(i, 1);
+    Target.prototype.draw = function (camera) {
+        for (var i = 1; i < 10 + this.win; i++) {
+            camera.circle(this.pos, gridSize * i / 5, "Blue");
         }
+    };
+    Target.prototype.update = function (ship) {
+        if (this.win > 0) {
+            this.win += 1;
+        }
+        if (this.win > 20) {
+            this.win = 1;
+        }
+        if (this.win == 0) {
+            var diff = point_1.Point.sub(ship.pos, this.pos);
+            var dist = Math.sqrt(diff.x * diff.x + diff.y * diff.y);
+            if (dist < gridSize * 2) {
+                this.win = 1;
+            }
+        }
+        return this.win != 0;
+    };
+    return Target;
+}());
+var ship_record_update_rate = 0.1;
+var ShipRecord = (function () {
+    function ShipRecord() {
+        this.history = [];
+        this.lastUpdate = 0;
     }
-}
-window.requestAnimationFrame(frame);
-window.addEventListener('keydown', keyDown, false);
-window.addEventListener('keyup', keyUp, false);
+    ShipRecord.prototype.update = function (ship, deltaSeconds) {
+        this.lastUpdate += deltaSeconds;
+        if (this.lastUpdate > ship_record_update_rate) {
+            this.lastUpdate = this.lastUpdate % ship_record_update_rate;
+            this.history.push(ship.pos);
+        }
+    };
+    ShipRecord.prototype.draw = function (camera, time) {
+        camera.line(this.history, "#f0f0f0");
+    };
+    return ShipRecord;
+}());
+var Universe = (function () {
+    function Universe() {
+        var settings = new Settings();
+        this.simplex_world = new SimplexWorld();
+        this.ship = new Ship(settings, this.simplex_world);
+        this.camera_track = new CameraTrack(this.ship.pos);
+        this.target = new Target(settings);
+        this.pressedKeys = new Array();
+        this.previousMillis = 0;
+        this.reset = 0;
+        this.cur_record = new ShipRecord();
+        this.records = [];
+        this.current_time = 0;
+    }
+    Universe.prototype.updateScene = function (deltaSeconds) {
+        this.current_time += deltaSeconds;
+        if (this.reset == 0) {
+            this.cur_record.update(this.ship, deltaSeconds);
+            if (this.ship.updateMe(this.pressedKeys, deltaSeconds)) {
+                this.reset += deltaSeconds;
+            }
+        }
+        var toTrack = new point_1.Point(this.ship.pos.x + this.ship.vel.x * 2, this.ship.pos.y + this.ship.vel.y * 2);
+        this.camera_track.track(toTrack, deltaSeconds);
+        if (this.target.update(this.ship)) {
+            if (this.reset == 0) {
+                this.reset += deltaSeconds;
+            }
+        }
+        if (this.reset > 0) {
+            this.reset += deltaSeconds;
+            if (this.reset > max_reset) {
+                this.reset = -max_reset + 0.0001;
+                this.doReset();
+            }
+        }
+        else if (this.reset < 0) {
+            this.reset += deltaSeconds;
+            if (this.reset >= 0) {
+                this.reset = 0;
+            }
+        }
+    };
+    Universe.prototype.doReset = function () {
+        this.target.win = 0;
+        this.ship.respawn();
+        this.camera_track.point = this.ship.pos;
+        this.records.push(this.cur_record);
+        this.cur_record = new ShipRecord();
+        while (this.records.length > 10) {
+            this.records.splice(0, 1);
+        }
+        this.current_time = 0;
+    };
+    Universe.prototype.drawScene = function () {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        var reset_x = this.reset * (Math.PI / (2 * max_reset));
+        var scale = Math.pow(1.5, Math.tan(reset_x) - reset_x);
+        var camera = new Camera(this.camera_track.point, scale);
+        this.simplex_world.draw(camera, this.ship.pos);
+        for (var _i = 0, _a = this.records; _i < _a.length; _i++) {
+            var record = _a[_i];
+            record.draw(camera, this.current_time);
+        }
+        this.ship.draw(camera);
+        this.target.draw(camera);
+    };
+    Universe.prototype.resize = function () {
+        var width = canvas.clientWidth;
+        var height = canvas.clientHeight;
+        if (canvas.width != width ||
+            canvas.height != height) {
+            canvas.width = width;
+            canvas.height = height;
+        }
+    };
+    Universe.prototype.frame = function (currentMillis) {
+        var _this = this;
+        var deltaSeconds = (currentMillis - this.previousMillis) / 1000;
+        this.previousMillis = currentMillis;
+        deltaSeconds = Math.min(deltaSeconds, 1);
+        this.resize();
+        this.updateScene(deltaSeconds);
+        this.drawScene();
+        window.requestAnimationFrame(function (x) { return _this.frame(x); });
+    };
+    Universe.prototype.keyDown = function (e) {
+        if (!has(this.pressedKeys, e.keyCode)) {
+            this.pressedKeys.push(e.keyCode);
+        }
+    };
+    Universe.prototype.keyUp = function (e) {
+        for (var i = this.pressedKeys.length - 1; i >= 0; i--) {
+            if (this.pressedKeys[i] === e.keyCode) {
+                this.pressedKeys.splice(i, 1);
+            }
+        }
+    };
+    Universe.prototype.register = function () {
+        var _this = this;
+        window.requestAnimationFrame(function (x) { return _this.frame(x); });
+        window.addEventListener('keydown', function (x) { return _this.keyDown(x); }, false);
+        window.addEventListener('keyup', function (x) { return _this.keyUp(x); }, false);
+    };
+    return Universe;
+}());
+new Universe().register();
 
 },{"./marchingsquares":2,"./perlin":3,"./point":4}],2:[function(require,module,exports){
 "use strict";

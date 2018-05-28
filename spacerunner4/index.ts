@@ -5,6 +5,9 @@ import { marching_squares } from "./marchingsquares";
 const canvas: HTMLCanvasElement = document.getElementById("mainCanvas") as HTMLCanvasElement
 const ctx: CanvasRenderingContext2D = canvas.getContext("2d")
 
+const seed = Math.random();
+perlin.seed(seed)
+
 const worldSize = (1 << 10) + 1
 const gridSize = 32
 const simplex_scale = 256;
@@ -14,6 +17,7 @@ const rot_damp = 8
 const thrust = 75
 const rotation = 32
 const falloff_grids = 5
+const max_reset = 0.75
 
 const shipColors = [
     "DarkRed",
@@ -23,6 +27,33 @@ const shipColors = [
     "Blue",
     "Purple",
 ]
+
+class Settings {
+    ship_color: string;
+    spawn_point: Point;
+    target_point: Point;
+
+    constructor() {
+        this.ship_color = shipColors[Math.floor(Math.random() * shipColors.length)]
+        this.spawn_point = this.choose_point();
+        this.target_point = this.choose_point();
+    }
+
+    choose_point(): Point {
+        let point = new Point(0, 0);
+        do {
+            point = new Point((Math.random() * 2 - 1) * worldSize, (Math.random() * 2 - 1) * worldSize);
+        } while (sample_noise(point.x, point.y) < 1 - 0.5 * (1 - simplex_offset));
+        return point;
+    }
+}
+
+function sample_noise(x: number, y: number) {
+    //return x * x + y * y - Math.PI * 2
+    let outside_boundary = worldSize - falloff_grids * gridSize;
+    let outside = Math.max(x - outside_boundary, -x - outside_boundary, y - outside_boundary, -y - outside_boundary, 0.0) / (gridSize * falloff_grids);
+    return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - outside * outside * (1 + simplex_offset);
+}
 
 function sign(x: number): number {
     if (x < 0) {
@@ -40,70 +71,98 @@ function has<T>(arr: Array<T>, v: T): boolean {
 
 class Camera {
     delta: Point
+    scale: number
 
-    constructor(center: Point) {
-        var offset = new Point(canvas.width / 2, canvas.height / 2)
-        this.delta = Point.sub(offset, center)
+    constructor(center: Point, scale: number) {
+        this.delta = Point.sub(new Point(0, 0), center)
+        this.scale = scale
     }
 
     fill(poly: Array<Point>, color: string) {
         ctx.fillStyle = color
+        ctx.beginPath()
         this.drawImpl(poly)
+        ctx.closePath()
         ctx.fill()
     }
 
     draw(poly: Array<Point>, color: string) {
         ctx.strokeStyle = color
+        ctx.beginPath()
+        this.drawImpl(poly)
+        ctx.closePath()
+        ctx.stroke()
+    }
+
+    line(poly: Array<Point>, color: string) {
+        ctx.strokeStyle = color
+        ctx.beginPath()
         this.drawImpl(poly)
         ctx.stroke()
     }
 
+    transform(point: Point): Point {
+        return Point.add(Point.mul(Point.add(point, this.delta), this.scale), new Point(canvas.width / 2, canvas.height / 2))
+    }
+
+    transform_scale(distance: number): number {
+        return distance * this.scale
+    }
+
     drawImpl(poly: Array<Point>) {
-        ctx.beginPath()
         for (var index = 0; index < poly.length; index++) {
-            var element = Point.add(poly[index], this.delta)
+            var element = this.transform(poly[index])
             if (index == 0) {
                 ctx.moveTo(element.x, element.y)
             } else {
                 ctx.lineTo(element.x, element.y)
             }
         }
-        ctx.closePath()
     }
 
     draw_segments(poly: Array<[Point, Point]>, color: string) {
         ctx.strokeStyle = color
         ctx.beginPath();
-        for (var [start, end] of poly) {
-            ctx.moveTo(start.x + this.delta.x, start.y + this.delta.y);
-            ctx.lineTo(end.x + this.delta.x, end.y + this.delta.y);
+        for (var [start_world, end_world] of poly) {
+            let start = this.transform(start_world)
+            let end = this.transform(end_world)
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
         }
         ctx.stroke()
     }
 
-    grid(color: string) {
-        ctx.strokeStyle = color
-        ctx.beginPath()
-        for (var i = 0; i < canvas.width + gridSize; i += gridSize) {
-            var x = Math.floor((i - this.delta.x) / gridSize) * gridSize + this.delta.x
-            ctx.moveTo(x, 0)
-            ctx.lineTo(x, canvas.height)
-        }
-        for (var i = 0; i < canvas.width + gridSize; i += gridSize) {
-            var y = Math.floor((i - this.delta.y) / gridSize) * gridSize + this.delta.y
-            ctx.moveTo(0, y)
-            ctx.lineTo(canvas.width, y)
-        }
-        ctx.stroke()
-        ctx.strokeStyle = "red"
-        ctx.beginPath()
-        ctx.moveTo(-worldSize + this.delta.x, -worldSize + this.delta.y)
-        ctx.lineTo(worldSize + this.delta.x, -worldSize + this.delta.y)
-        ctx.lineTo(worldSize + this.delta.x, worldSize + this.delta.y)
-        ctx.lineTo(-worldSize + this.delta.x, worldSize + this.delta.y)
-        ctx.closePath()
-        ctx.stroke()
+    circle(center: Point, radius: number, color: string) {
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        let center_draw = this.transform(center)
+        ctx.arc(center_draw.x, center_draw.y, this.transform_scale(radius), 0, 2 * Math.PI);
+        ctx.stroke();
     }
+
+    // grid(color: string) {
+    //     ctx.strokeStyle = color
+    //     ctx.beginPath()
+    //     for (var i = 0; i < canvas.width + gridSize; i += gridSize) {
+    //         var x = Math.floor((i - this.delta.x) / gridSize) * gridSize + this.delta.x
+    //         ctx.moveTo(x, 0)
+    //         ctx.lineTo(x, canvas.height)
+    //     }
+    //     for (var i = 0; i < canvas.height + gridSize; i += gridSize) {
+    //         var y = Math.floor((i - this.delta.y) / gridSize) * gridSize + this.delta.y
+    //         ctx.moveTo(0, y)
+    //         ctx.lineTo(canvas.width, y)
+    //     }
+    //     ctx.stroke()
+    //     ctx.strokeStyle = "red"
+    //     ctx.beginPath()
+    //     ctx.moveTo(-worldSize + this.delta.x, -worldSize + this.delta.y)
+    //     ctx.lineTo(worldSize + this.delta.x, -worldSize + this.delta.y)
+    //     ctx.lineTo(worldSize + this.delta.x, worldSize + this.delta.y)
+    //     ctx.lineTo(-worldSize + this.delta.x, worldSize + this.delta.y)
+    //     ctx.closePath()
+    //     ctx.stroke()
+    // }
 }
 
 class CameraTrack {
@@ -125,13 +184,8 @@ class SimplexWorld {
     constructor() {
         let mapped_start = Math.floor(worldSize / gridSize);
         let mapped_size = mapped_start * 2;
-        let outside_boundary = worldSize / gridSize - falloff_grids;
 
-        this.lines = marching_squares(function (x, y) {
-            //return x * x + y * y - Math.PI * 2
-            let outside = Math.max(x - outside_boundary, -x - outside_boundary, y - outside_boundary, -y - outside_boundary, 0.0) / falloff_grids;
-            return perlin.simplex2(x * gridSize / simplex_scale, y * gridSize / simplex_scale) + simplex_offset - outside * outside * (1 + simplex_offset);
-        }, mapped_size, mapped_size, -mapped_start, -mapped_start)
+        this.lines = marching_squares(function (x, y) { return sample_noise(x * gridSize, y * gridSize); }, mapped_size, mapped_size, -mapped_start, -mapped_start)
         for (var item of this.lines) {
             item[0] = Point.mul(item[0], gridSize);
             item[1] = Point.mul(item[1], gridSize);
@@ -156,43 +210,51 @@ class SimplexWorld {
                 }
             }
         }
-        return cardinality % 2 !== 0;
+        return cardinality % 2 == 0;
     }
 }
 
+function ship_points(pos: Point, rot: number): Array<Point> {
+    var radius = 10
+    var theta = Math.PI * 4 / 5
+    var offsets = [
+        new Point(Math.cos(rot + theta) * radius, Math.sin(rot + theta) * radius),
+        new Point(Math.cos(rot - theta) * radius, Math.sin(rot - theta) * radius),
+        new Point(Math.cos(rot) * radius, Math.sin(rot) * radius),
+    ]
+    for (var i = 0; i < offsets.length; i++) {
+        offsets[i] = Point.add(pos, offsets[i])
+    }
+    return offsets
+}
+
 class Ship {
-    lastUpdate: number
-    rotating: number
-    throttle: boolean
-    color: string
+    pos: Point
+    vel: Point
     rot: number
     rotVel: number
-    vel: Point
-    pos: Point
+    throttle: boolean
+    rotating: number
+    color: string
+    world: SimplexWorld
+    settings: Settings
 
-    constructor(pos: Point, rot: number) {
-        this.pos = pos
+    constructor(settings: Settings, world: SimplexWorld) {
+        this.pos = new Point(0, 0)
         this.vel = new Point(0, 0)
-        this.rot = rot
+        this.rot = 0
         this.rotVel = 0
-        this.color = shipColors[Math.floor(Math.random() * shipColors.length)]
         this.throttle = false
         this.rotating = 0
-        this.lastUpdate = 0
+        this.color = settings.ship_color
+        this.world = world
+        this.settings = settings
+
+        this.respawn()
     }
 
     points() {
-        var radius = 10
-        var theta = Math.PI * 4 / 5
-        var offsets = [
-            new Point(Math.cos(this.rot + theta) * radius, Math.sin(this.rot + theta) * radius),
-            new Point(Math.cos(this.rot - theta) * radius, Math.sin(this.rot - theta) * radius),
-            new Point(Math.cos(this.rot) * radius, Math.sin(this.rot) * radius),
-        ]
-        for (var i = 0; i < offsets.length; i++) {
-            offsets[i] = Point.add(this.pos, offsets[i])
-        }
-        return offsets
+        return ship_points(this.pos, this.rot)
     }
 
     thrustPoints() {
@@ -217,7 +279,25 @@ class Ship {
         }
     }
 
-    update(deltaSeconds: number) {
+    test(): boolean {
+        for (var point of this.points()) {
+            if (this.world.test(point)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    respawn() {
+        this.pos = this.settings.spawn_point;
+        this.rot = 0;
+        this.rotVel = 0
+        this.vel = new Point(0, 0)
+        this.throttle = false;
+        this.rotating = 0;
+    }
+
+    update(deltaSeconds: number): boolean {
         var my_speed_damp = 1 - speed_damp * deltaSeconds
         var my_rot_damp = 1 - rot_damp * deltaSeconds
         var my_thrust = thrust * deltaSeconds
@@ -235,9 +315,15 @@ class Ship {
         this.rotVel *= my_rot_damp
         this.pos = Point.add(this.pos, Point.mul(this.vel, deltaSeconds))
         this.rot += this.rotVel * deltaSeconds
+
+        if (this.test()) {
+            return true
+        } else {
+            return false
+        }
     }
 
-    updateMe(pressedKeys: Array<number>, deltaSeconds: number) {
+    updateMe(pressedKeys: Array<number>, deltaSeconds: number): boolean {
         if (has(pressedKeys, 37) || has(pressedKeys, 65)) { // left | a
             this.rotating = -1
         } else if (has(pressedKeys, 39) || has(pressedKeys, 68)) { // right | d
@@ -252,64 +338,203 @@ class Ship {
         }
         if (has(pressedKeys, 40) || has(pressedKeys, 83)) { // down | s
         }
-        this.update(deltaSeconds)
+        return this.update(deltaSeconds)
     }
 }
 
-function updateScene(ship: Ship, camera: CameraTrack, pressedKeys: Array<number>, deltaSeconds: number) {
-    ship.updateMe(pressedKeys, deltaSeconds)
-    var toTrack = new Point(ship.pos.x + ship.vel.x * 2, ship.pos.y + ship.vel.y * 2)
-    camera.track(toTrack, deltaSeconds)
-}
+class Target {
+    pos: Point
+    win: number
 
-function drawScene(center: Point, ship: Ship, simplexWorld: SimplexWorld) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    var camera = new Camera(center)
-    simplexWorld.draw(camera, ship.pos)
-    camera.grid("grey")
-    ship.draw(camera)
-}
-
-function resize() {
-    var width = canvas.clientWidth
-    var height = canvas.clientHeight
-    if (canvas.width != width ||
-        canvas.height != height) {
-        canvas.width = width
-        canvas.height = height
+    constructor(settings: Settings) {
+        this.pos = settings.target_point
+        this.win = 0
     }
-}
 
-var previousMillis = 0
-var ship = new Ship(new Point(Math.random() * 100 - 50, Math.random() * 100 - 50), 0)
-var cameraTrack = new CameraTrack(ship.pos)
-var pressedKeys = new Array<number>()
-var simplexWorld = new SimplexWorld()
-
-function frame(currentMillis: number) {
-    var deltaSeconds = (currentMillis - previousMillis) / 1000
-    previousMillis = currentMillis
-    deltaSeconds = Math.min(deltaSeconds, 1)
-    resize()
-    updateScene(ship, cameraTrack, pressedKeys, deltaSeconds)
-    drawScene(cameraTrack.point, ship, simplexWorld)
-    window.requestAnimationFrame(frame)
-}
-
-function keyDown(e: KeyboardEvent) {
-    if (!has(pressedKeys, e.keyCode)) {
-        pressedKeys.push(e.keyCode)
-    }
-}
-
-function keyUp(e: KeyboardEvent) {
-    for (var i = pressedKeys.length - 1; i >= 0; i--) {
-        if (pressedKeys[i] === e.keyCode) {
-            pressedKeys.splice(i, 1);
+    draw(camera: Camera) {
+        for (var i = 1; i < 10 + this.win; i++) {
+            camera.circle(this.pos, gridSize * i / 5, "Blue")
         }
     }
+
+    update(ship: Ship): boolean {
+        if (this.win > 0) {
+            this.win += 1;
+        }
+        if (this.win > 20) {
+            this.win = 1;
+        }
+        if (this.win == 0) {
+            let diff = Point.sub(ship.pos, this.pos);
+            let dist = Math.sqrt(diff.x * diff.x + diff.y * diff.y)
+            if (dist < gridSize * 2) {
+                this.win = 1
+            }
+        }
+        return this.win != 0
+    }
 }
 
-window.requestAnimationFrame(frame)
-window.addEventListener('keydown', keyDown, false)
-window.addEventListener('keyup', keyUp, false)
+const ship_record_update_rate = 0.1;
+class ShipRecord {
+    history: Point[]
+    lastUpdate: number
+
+    constructor() {
+        this.history = [];
+        this.lastUpdate = 0;
+    }
+
+    update(ship: Ship, deltaSeconds: number) {
+        this.lastUpdate += deltaSeconds;
+        if (this.lastUpdate > ship_record_update_rate) {
+            this.lastUpdate = this.lastUpdate % ship_record_update_rate;
+            this.history.push(ship.pos)
+        }
+    }
+
+    //calculate(time: number): [Point, number] {
+    //    let real_time = time / ship_record_update_rate;
+    //    let index = Math.floor(real_time);
+    //    let dt = real_time - index;
+    //    if (index > this.history.length - 2) {
+    //        return this.history[this.history.length - 1]
+    //    }
+    //    let cur = this.history[index];
+    //    let next = this.history[index + 1];
+    //    let actual_pos = Point.add(Point.mul(cur[0], 1 - dt), Point.mul(next[0], dt))
+    //    let actual_rot = cur[1] * (1 - dt) + next[1] * dt
+    //    return [actual_pos, actual_rot]
+    //}
+
+    draw(camera: Camera, time: number) {
+        camera.line(this.history, "#f0f0f0")
+    }
+}
+
+class Universe {
+    ship: Ship
+    camera_track: CameraTrack
+    target: Target
+    pressedKeys: Array<number>
+    simplex_world: SimplexWorld
+    previousMillis: number
+    reset: number
+    records: Array<ShipRecord>
+    cur_record: ShipRecord
+    current_time: number
+
+    constructor() {
+        var settings = new Settings();
+        this.simplex_world = new SimplexWorld()
+        this.ship = new Ship(settings, this.simplex_world)
+        this.camera_track = new CameraTrack(this.ship.pos)
+        this.target = new Target(settings)
+        this.pressedKeys = new Array<number>();
+        this.previousMillis = 0;
+        this.reset = 0;
+        this.cur_record = new ShipRecord();
+        this.records = [];
+        this.current_time = 0;
+    }
+
+    updateScene(deltaSeconds: number) {
+        this.current_time += deltaSeconds;
+        if (this.reset == 0) {
+            this.cur_record.update(this.ship, deltaSeconds)
+            if (this.ship.updateMe(this.pressedKeys, deltaSeconds)) {
+                this.reset += deltaSeconds;
+            }
+        }
+        var toTrack = new Point(this.ship.pos.x + this.ship.vel.x * 2, this.ship.pos.y + this.ship.vel.y * 2)
+        this.camera_track.track(toTrack, deltaSeconds)
+        if (this.target.update(this.ship)) {
+            if (this.reset == 0) {
+                this.reset += deltaSeconds;
+            }
+        }
+
+        if (this.reset > 0) {
+            this.reset += deltaSeconds;
+            if (this.reset > max_reset) {
+                this.reset = -max_reset + 0.0001
+                this.doReset()
+            }
+        } else if (this.reset < 0) {
+            this.reset += deltaSeconds;
+            if (this.reset >= 0) {
+                this.reset = 0;
+            }
+        }
+    }
+
+    doReset() {
+        this.target.win = 0;
+        this.ship.respawn();
+        this.camera_track.point = this.ship.pos
+        this.records.push(this.cur_record);
+        this.cur_record = new ShipRecord();
+        while (this.records.length > 10) {
+            this.records.splice(0, 1)
+        }
+        this.current_time = 0;
+    }
+
+    drawScene() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        let reset_x = this.reset * (Math.PI / (2 * max_reset));
+        var scale = Math.pow(1.5, Math.tan(reset_x) - reset_x)
+        //let reset_x = this.reset / max_reset;
+        //let scale = Math.exp(reset_x * reset_x * 5 * sign(reset_x));
+        var camera = new Camera(this.camera_track.point, scale)
+        this.simplex_world.draw(camera, this.ship.pos)
+        for (var record of this.records) {
+            record.draw(camera, this.current_time)
+        }
+        //camera.grid("grey")
+        this.ship.draw(camera)
+        this.target.draw(camera)
+    }
+
+    resize() {
+        var width = canvas.clientWidth
+        var height = canvas.clientHeight
+        if (canvas.width != width ||
+            canvas.height != height) {
+            canvas.width = width
+            canvas.height = height
+        }
+    }
+
+    frame(currentMillis: number) {
+        var deltaSeconds = (currentMillis - this.previousMillis) / 1000
+        this.previousMillis = currentMillis
+        deltaSeconds = Math.min(deltaSeconds, 1)
+        this.resize()
+        this.updateScene(deltaSeconds)
+        this.drawScene()
+        window.requestAnimationFrame(x => this.frame(x))
+    }
+
+    keyDown(e: KeyboardEvent) {
+        if (!has(this.pressedKeys, e.keyCode)) {
+            this.pressedKeys.push(e.keyCode)
+        }
+    }
+
+    keyUp(e: KeyboardEvent) {
+        for (var i = this.pressedKeys.length - 1; i >= 0; i--) {
+            if (this.pressedKeys[i] === e.keyCode) {
+                this.pressedKeys.splice(i, 1);
+            }
+        }
+    }
+
+    register() {
+        window.requestAnimationFrame(x => this.frame(x))
+        window.addEventListener('keydown', x => this.keyDown(x), false)
+        window.addEventListener('keyup', x => this.keyUp(x), false)
+    }
+}
+
+new Universe().register()
