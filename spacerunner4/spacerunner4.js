@@ -337,6 +337,7 @@ var Universe = (function () {
         this.cur_record = new ShipRecord();
         this.records = [];
         this.current_time = 0;
+        this.draw_records = true;
     }
     Universe.prototype.updateScene = function (deltaSeconds) {
         this.current_time += deltaSeconds;
@@ -368,25 +369,29 @@ var Universe = (function () {
         }
     };
     Universe.prototype.doReset = function () {
-        this.target.win = 0;
         this.ship.respawn();
         this.camera_track.point = this.ship.pos;
-        this.records.push(this.cur_record);
+        if (this.target.win != 0) {
+            this.records.push(this.cur_record);
+        }
         this.cur_record = new ShipRecord();
-        while (this.records.length > 10) {
+        while (this.records.length > 100) {
             this.records.splice(0, 1);
         }
+        this.target.win = 0;
         this.current_time = 0;
     };
     Universe.prototype.drawScene = function () {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         var reset_x = this.reset * (Math.PI / (2 * max_reset));
-        var scale = Math.pow(1.5, Math.tan(reset_x) - reset_x);
+        var scale = Math.exp(Math.log(1.5) * (Math.tan(reset_x) - reset_x));
         var camera = new Camera(this.camera_track.point, scale);
         this.simplex_world.draw(camera, this.ship.pos);
-        for (var _i = 0, _a = this.records; _i < _a.length; _i++) {
-            var record = _a[_i];
-            record.draw(camera, this.current_time);
+        if (this.draw_records) {
+            for (var _i = 0, _a = this.records; _i < _a.length; _i++) {
+                var record = _a[_i];
+                record.draw(camera, this.current_time);
+            }
         }
         this.ship.draw(camera);
         this.target.draw(camera);
@@ -411,6 +416,9 @@ var Universe = (function () {
         window.requestAnimationFrame(function (x) { return _this.frame(x); });
     };
     Universe.prototype.keyDown = function (e) {
+        if (e.keyCode == 32) {
+            this.draw_records = !this.draw_records;
+        }
         if (!has(this.pressedKeys, e.keyCode)) {
             this.pressedKeys.push(e.keyCode);
         }

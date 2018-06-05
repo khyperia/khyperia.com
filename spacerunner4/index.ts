@@ -49,7 +49,6 @@ class Settings {
 }
 
 function sample_noise(x: number, y: number) {
-    //return x * x + y * y - Math.PI * 2
     let outside_boundary = worldSize - falloff_grids * gridSize;
     let outside = Math.max(x - outside_boundary, -x - outside_boundary, y - outside_boundary, -y - outside_boundary, 0.0) / (gridSize * falloff_grids);
     return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - outside * outside * (1 + simplex_offset);
@@ -139,30 +138,6 @@ class Camera {
         ctx.arc(center_draw.x, center_draw.y, this.transform_scale(radius), 0, 2 * Math.PI);
         ctx.stroke();
     }
-
-    // grid(color: string) {
-    //     ctx.strokeStyle = color
-    //     ctx.beginPath()
-    //     for (var i = 0; i < canvas.width + gridSize; i += gridSize) {
-    //         var x = Math.floor((i - this.delta.x) / gridSize) * gridSize + this.delta.x
-    //         ctx.moveTo(x, 0)
-    //         ctx.lineTo(x, canvas.height)
-    //     }
-    //     for (var i = 0; i < canvas.height + gridSize; i += gridSize) {
-    //         var y = Math.floor((i - this.delta.y) / gridSize) * gridSize + this.delta.y
-    //         ctx.moveTo(0, y)
-    //         ctx.lineTo(canvas.width, y)
-    //     }
-    //     ctx.stroke()
-    //     ctx.strokeStyle = "red"
-    //     ctx.beginPath()
-    //     ctx.moveTo(-worldSize + this.delta.x, -worldSize + this.delta.y)
-    //     ctx.lineTo(worldSize + this.delta.x, -worldSize + this.delta.y)
-    //     ctx.lineTo(worldSize + this.delta.x, worldSize + this.delta.y)
-    //     ctx.lineTo(-worldSize + this.delta.x, worldSize + this.delta.y)
-    //     ctx.closePath()
-    //     ctx.stroke()
-    // }
 }
 
 class CameraTrack {
@@ -423,6 +398,7 @@ class Universe {
     records: Array<ShipRecord>
     cur_record: ShipRecord
     current_time: number
+    draw_records: boolean
 
     constructor() {
         var settings = new Settings();
@@ -436,6 +412,7 @@ class Universe {
         this.cur_record = new ShipRecord();
         this.records = [];
         this.current_time = 0;
+        this.draw_records = true;
     }
 
     updateScene(deltaSeconds: number) {
@@ -469,29 +446,30 @@ class Universe {
     }
 
     doReset() {
-        this.target.win = 0;
         this.ship.respawn();
         this.camera_track.point = this.ship.pos
-        this.records.push(this.cur_record);
+        if (this.target.win != 0) {
+            this.records.push(this.cur_record);
+        }
         this.cur_record = new ShipRecord();
-        while (this.records.length > 10) {
+        while (this.records.length > 100) {
             this.records.splice(0, 1)
         }
+        this.target.win = 0;
         this.current_time = 0;
     }
 
     drawScene() {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
         let reset_x = this.reset * (Math.PI / (2 * max_reset));
-        var scale = Math.pow(1.5, Math.tan(reset_x) - reset_x)
-        //let reset_x = this.reset / max_reset;
-        //let scale = Math.exp(reset_x * reset_x * 5 * sign(reset_x));
+        var scale = Math.exp(Math.log(1.5) * (Math.tan(reset_x) - reset_x))
         var camera = new Camera(this.camera_track.point, scale)
         this.simplex_world.draw(camera, this.ship.pos)
-        for (var record of this.records) {
-            record.draw(camera, this.current_time)
+        if (this.draw_records) {
+            for (var record of this.records) {
+                record.draw(camera, this.current_time)
+            }
         }
-        //camera.grid("grey")
         this.ship.draw(camera)
         this.target.draw(camera)
     }
@@ -517,6 +495,9 @@ class Universe {
     }
 
     keyDown(e: KeyboardEvent) {
+        if (e.keyCode == 32) { // space
+            this.draw_records = !this.draw_records
+        }
         if (!has(this.pressedKeys, e.keyCode)) {
             this.pressedKeys.push(e.keyCode)
         }
