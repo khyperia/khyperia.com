@@ -1,6 +1,6 @@
 Hi, I'm khy, she/her/hers.
 
-I'm currently at Microsoft on the C#/VB compiler team, and graduated from Michigan Tech studying computer science.
+I graduated from Michigan Tech studying computer science. Currently unemployed (please throw job openings at me!)
 
 You can find me lots of places. Chances are, if you find a wild khyperia somewhere, it's me. Here are some common ones:
 

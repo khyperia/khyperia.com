@@ -7,11 +7,13 @@ dest_folder:=/srv/http
 
 .PHONY: all clean install diff
 
+title = $(if $(subst /index,,/$(1)),$(subst /index,,/$(1)),khyperia.com)
+
 all: $(built_files)
 
 %.html: %.md Makefile
 	@echo "$< -> $@"
-	@(echo "<html>"; TITLE="&#10084; $(subst /index,/,/$*)" envsubst < head.template; echo "<body>"; markdown $<; echo "</body>"; echo "</html>") > $@
+	@(echo "<html>"; TITLE="&#10084; $(call title,$*)" envsubst < head.template; echo "<body>"; markdown $<; echo "</body>"; echo "</html>") > $@
 
 install: all | $(dest_folder)
 	@echo Invoking sudo to copy files...
