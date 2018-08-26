@@ -1,70 +1,27 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
 exports.__esModule = true;
-var perlin = require("./perlin");
 var point_1 = require("./point");
-var marchingsquares_1 = require("./marchingsquares");
 var canvas = document.getElementById("mainCanvas");
 var ctx = canvas.getContext("2d");
-var seed = Math.random();
-perlin.seed(seed);
-var worldSize = (1 << 10) + 1;
-var gridSize = 32;
-var simplex_scale = 256;
-var simplex_offset = 0.25;
-var speed_damp = 0.02;
-var rot_damp = 8;
-var thrust = 75;
-var rotation = 32;
-var falloff_grids = 5;
-var max_reset = 0.75;
-var shipColors = [
-    "DarkRed",
-    "DarkOrange",
-    "Gold",
-    "Green",
-    "Blue",
-    "Purple",
-];
-var Settings = (function () {
-    function Settings() {
-        this.ship_color = shipColors[Math.floor(Math.random() * shipColors.length)];
-        this.spawn_point = this.choose_point();
-        this.target_point = this.choose_point();
-    }
-    Settings.prototype.choose_point = function () {
-        var point = new point_1.Point(0, 0);
-        do {
-            point = new point_1.Point((Math.random() * 2 - 1) * worldSize, (Math.random() * 2 - 1) * worldSize);
-        } while (sample_noise(point.x, point.y) < 1 - 0.5 * (1 - simplex_offset));
-        return point;
-    };
-    return Settings;
-}());
-function sample_noise(x, y) {
-    var outside_boundary = worldSize - falloff_grids * gridSize;
-    var outside = Math.max(x - outside_boundary, -x - outside_boundary, y - outside_boundary, -y - outside_boundary, 0.0) / (gridSize * falloff_grids);
-    return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - outside * outside * (1 + simplex_offset);
-}
-function sign(x) {
-    if (x < 0) {
-        return -1;
-    }
-    else if (x > 0) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
-}
-function has(arr, v) {
-    return arr.some(function (x) { return x == v; });
-}
 var Camera = (function () {
     function Camera(center, scale) {
         this.delta = point_1.Point.sub(new point_1.Point(0, 0), center);
         this.scale = scale;
     }
+    Camera.prototype.resize = function () {
+        var width = canvas.clientWidth;
+        var height = canvas.clientHeight;
+        if (canvas.width != width ||
+            canvas.height != height) {
+            canvas.width = width;
+            canvas.height = height;
+        }
+    };
+    Camera.prototype.begin = function () {
+        this.resize();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
     Camera.prototype.fill = function (poly, color) {
         ctx.fillStyle = color;
         ctx.beginPath();
@@ -121,8 +78,14 @@ var Camera = (function () {
         ctx.arc(center_draw.x, center_draw.y, this.transform_scale(radius), 0, 2 * Math.PI);
         ctx.stroke();
     };
+    Camera.prototype.text = function (value, line) {
+        ctx.strokeStyle = "Black";
+        ctx.font = "16px sans-serif";
+        ctx.fillText(value, 10, 15 + line * 20);
+    };
     return Camera;
 }());
+exports.Camera = Camera;
 var CameraTrack = (function () {
     function CameraTrack(point) {
         this.point = point;
@@ -133,38 +96,56 @@ var CameraTrack = (function () {
     };
     return CameraTrack;
 }());
-var SimplexWorld = (function () {
-    function SimplexWorld() {
-        var mapped_start = Math.floor(worldSize / gridSize);
-        var mapped_size = mapped_start * 2;
-        this.lines = marchingsquares_1.marching_squares(function (x, y) { return sample_noise(x * gridSize, y * gridSize); }, mapped_size, mapped_size, -mapped_start, -mapped_start);
-        for (var _i = 0, _a = this.lines; _i < _a.length; _i++) {
-            var item = _a[_i];
-            item[0] = point_1.Point.mul(item[0], gridSize);
-            item[1] = point_1.Point.mul(item[1], gridSize);
+exports.CameraTrack = CameraTrack;
+
+},{"./point":5}],2:[function(require,module,exports){
+"use strict";
+exports.__esModule = true;
+var point_1 = require("./point");
+var camera_1 = require("./camera");
+var simplexworld_1 = require("./simplexworld");
+var rand_1 = require("./rand");
+var speed_damp = 0.02;
+var rot_damp = 8;
+var thrust = 100;
+var rotation = 40;
+var max_reset = 0.75;
+var shipColors = [
+    "DarkRed",
+    "DarkOrange",
+    "Gold",
+    "Green",
+    "Blue",
+    "Purple",
+];
+var Settings = (function () {
+    function Settings() {
+        if (!location.hash) {
+            location.hash = "" + ((Math.random() * 10000) | 0);
         }
+        var random = rand_1.rngFromString(location.hash);
+        var rng = random.nextFloat.bind(random);
+        simplexworld_1.seedWorld(rng());
+        this.ship_color = shipColors[Math.floor(rng() * shipColors.length)];
+        this.spawn_point = simplexworld_1.SimplexWorld.choose_point(rng);
+        this.target_point = simplexworld_1.SimplexWorld.choose_point(rng);
     }
-    SimplexWorld.prototype.draw = function (camera, point) {
-        camera.draw_segments(this.lines, "green");
-    };
-    SimplexWorld.prototype.test = function (point) {
-        var cardinality = 0;
-        for (var _i = 0, _a = this.lines; _i < _a.length; _i++) {
-            var _b = _a[_i], start = _b[0], end = _b[1];
-            if (start.y <= point.y && end.y >= point.y ||
-                start.y >= point.y && end.y <= point.y) {
-                var slope = (end.y - start.y) / (end.x - start.x);
-                var intercept = start.y - slope * start.x;
-                var intersect_x = (point.y - intercept) / slope;
-                if (intersect_x < point.x) {
-                    cardinality++;
-                }
-            }
-        }
-        return cardinality % 2 == 0;
-    };
-    return SimplexWorld;
+    return Settings;
 }());
+function sign(x) {
+    if (x < 0) {
+        return -1;
+    }
+    else if (x > 0) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+function has(arr, v) {
+    return arr.some(function (x) { return x == v; });
+}
 function ship_points(pos, rot) {
     var radius = 10;
     var theta = Math.PI * 4 / 5;
@@ -285,7 +266,7 @@ var Target = (function () {
     }
     Target.prototype.draw = function (camera) {
         for (var i = 1; i < 10 + this.win; i++) {
-            camera.circle(this.pos, gridSize * i / 5, "Blue");
+            camera.circle(this.pos, Target.targetRadius / 10 * i, "Blue");
         }
     };
     Target.prototype.update = function (ship) {
@@ -298,12 +279,13 @@ var Target = (function () {
         if (this.win == 0) {
             var diff = point_1.Point.sub(ship.pos, this.pos);
             var dist = Math.sqrt(diff.x * diff.x + diff.y * diff.y);
-            if (dist < gridSize * 2) {
+            if (dist < Target.targetRadius) {
                 this.win = 1;
             }
         }
         return this.win != 0;
     };
+    Target.targetRadius = 80;
     return Target;
 }());
 var ship_record_update_rate = 0.1;
@@ -320,21 +302,40 @@ var ShipRecord = (function () {
         }
     };
     ShipRecord.prototype.draw = function (camera, time) {
-        camera.line(this.history, "#f0f0f0");
+        camera.line(this.history, "#a0a0a0");
     };
     return ShipRecord;
+}());
+var HighScore = (function () {
+    function HighScore() {
+        this.highScore = 0;
+        this.lastScore = 0;
+    }
+    HighScore.prototype.onFinish = function (time) {
+        this.lastScore = time;
+        if (time < this.highScore || this.highScore == 0) {
+            this.highScore = time;
+        }
+    };
+    HighScore.prototype.draw = function (camera, time) {
+        camera.text("high score: " + this.highScore, 0);
+        camera.text("last score: " + this.lastScore, 1);
+        camera.text("curr score: " + time, 2);
+    };
+    return HighScore;
 }());
 var Universe = (function () {
     function Universe() {
         var settings = new Settings();
-        this.simplex_world = new SimplexWorld();
+        this.simplex_world = new simplexworld_1.SimplexWorld();
         this.ship = new Ship(settings, this.simplex_world);
-        this.camera_track = new CameraTrack(this.ship.pos);
+        this.camera_track = new camera_1.CameraTrack(this.ship.pos);
         this.target = new Target(settings);
         this.pressedKeys = new Array();
         this.previousMillis = 0;
         this.reset = 0;
         this.cur_record = new ShipRecord();
+        this.high_score = new HighScore();
         this.records = [];
         this.current_time = 0;
         this.draw_records = true;
@@ -351,6 +352,7 @@ var Universe = (function () {
         this.camera_track.track(toTrack, deltaSeconds);
         if (this.target.update(this.ship)) {
             if (this.reset == 0) {
+                this.high_score.onFinish(this.current_time);
                 this.reset += deltaSeconds;
             }
         }
@@ -382,10 +384,10 @@ var Universe = (function () {
         this.current_time = 0;
     };
     Universe.prototype.drawScene = function () {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
         var reset_x = this.reset * (Math.PI / (2 * max_reset));
         var scale = Math.exp(Math.log(1.5) * (Math.tan(reset_x) - reset_x));
-        var camera = new Camera(this.camera_track.point, scale);
+        var camera = new camera_1.Camera(this.camera_track.point, scale);
+        camera.begin();
         this.simplex_world.draw(camera, this.ship.pos);
         if (this.draw_records) {
             for (var _i = 0, _a = this.records; _i < _a.length; _i++) {
@@ -395,22 +397,13 @@ var Universe = (function () {
         }
         this.ship.draw(camera);
         this.target.draw(camera);
-    };
-    Universe.prototype.resize = function () {
-        var width = canvas.clientWidth;
-        var height = canvas.clientHeight;
-        if (canvas.width != width ||
-            canvas.height != height) {
-            canvas.width = width;
-            canvas.height = height;
-        }
+        this.high_score.draw(camera, this.current_time);
     };
     Universe.prototype.frame = function (currentMillis) {
         var _this = this;
         var deltaSeconds = (currentMillis - this.previousMillis) / 1000;
         this.previousMillis = currentMillis;
         deltaSeconds = Math.min(deltaSeconds, 1);
-        this.resize();
         this.updateScene(deltaSeconds);
         this.drawScene();
         window.requestAnimationFrame(function (x) { return _this.frame(x); });
@@ -440,7 +433,7 @@ var Universe = (function () {
 }());
 new Universe().register();
 
-},{"./marchingsquares":2,"./perlin":3,"./point":4}],2:[function(require,module,exports){
+},{"./camera":1,"./point":5,"./rand":6,"./simplexworld":7}],3:[function(require,module,exports){
 "use strict";
 exports.__esModule = true;
 var point_1 = require("./point");
@@ -542,7 +535,7 @@ function one_square(func, x, y, arr) {
     }
 }
 
-},{"./point":4}],3:[function(require,module,exports){
+},{"./point":5}],4:[function(require,module,exports){
 "use strict";
 exports.__esModule = true;
 var Grad = (function () {
@@ -821,7 +814,7 @@ function perlin3(x, y, z) {
 exports.perlin3 = perlin3;
 ;
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 "use strict";
 exports.__esModule = true;
 var Point = (function () {
@@ -842,4 +835,116 @@ var Point = (function () {
 }());
 exports.Point = Point;
 
-},{}]},{},[1]);
+},{}],6:[function(require,module,exports){
+"use strict";
+exports.__esModule = true;
+function hashString(str) {
+    var hash = 0, i, chr;
+    if (str.length === 0)
+        return hash;
+    for (i = 0; i < str.length; i++) {
+        chr = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0;
+    }
+    return hash;
+}
+;
+var RNG = (function () {
+    function RNG(seed) {
+        this.m = 0x80000000;
+        this.a = 1103515245;
+        this.c = 12345;
+        this.state = seed ? seed : Math.floor(Math.random() * (this.m - 1));
+    }
+    RNG.prototype.nextInt = function () {
+        this.state = (this.a * this.state + this.c) % this.m;
+        return this.state;
+    };
+    RNG.prototype.nextFloat = function () {
+        return this.nextInt() / (this.m - 1);
+    };
+    RNG.prototype.nextRange = function (start, end) {
+        var rangeSize = end - start;
+        var randomUnder1 = this.nextInt() / this.m;
+        return start + Math.floor(randomUnder1 * rangeSize);
+    };
+    RNG.prototype.choice = function (array) {
+        return array[this.nextRange(0, array.length)];
+    };
+    return RNG;
+}());
+function rngFromString(str) {
+    str = str.replace(/^#/, "");
+    var num = +str;
+    if (isNaN(num)) {
+        return new RNG(hashString(str));
+    }
+    else {
+        return new RNG(num | 0);
+    }
+}
+exports.rngFromString = rngFromString;
+
+},{}],7:[function(require,module,exports){
+"use strict";
+exports.__esModule = true;
+var point_1 = require("./point");
+var perlin = require("./perlin");
+var marchingsquares_1 = require("./marchingsquares");
+var worldSize = (1 << 10) + 1;
+var gridSize = 32;
+var simplex_scale = 256;
+var simplex_offset = 0.25;
+var falloff_grids = 5;
+function seedWorld(seed) {
+    perlin.seed(seed);
+}
+exports.seedWorld = seedWorld;
+var SimplexWorld = (function () {
+    function SimplexWorld() {
+        var mapped_start = Math.floor(worldSize / gridSize);
+        var mapped_size = mapped_start * 2;
+        this.lines = marchingsquares_1.marching_squares(function (x, y) { return SimplexWorld.sample_noise(x * gridSize, y * gridSize); }, mapped_size, mapped_size, -mapped_start, -mapped_start);
+        for (var _i = 0, _a = this.lines; _i < _a.length; _i++) {
+            var item = _a[_i];
+            item[0] = point_1.Point.mul(item[0], gridSize);
+            item[1] = point_1.Point.mul(item[1], gridSize);
+        }
+    }
+    SimplexWorld.sample_noise = function (x, y) {
+        var outside_boundary = worldSize - (falloff_grids + 1) * gridSize;
+        var outside = Math.max(x - outside_boundary, -x - outside_boundary, y - outside_boundary, -y - outside_boundary, 0.0) / (gridSize * falloff_grids);
+        return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - outside * outside * (1 + simplex_offset);
+    };
+    SimplexWorld.choose_point = function (rng) {
+        var point = new point_1.Point(0, 0);
+        do {
+            point = new point_1.Point((rng() * 2 - 1) * worldSize, (rng() * 2 - 1) * worldSize);
+        } while (SimplexWorld.sample_noise(point.x, point.y) < 1 - 0.5 * (1 - simplex_offset));
+        return point;
+    };
+    SimplexWorld.prototype.draw = function (camera, point) {
+        camera.draw_segments(this.lines, "green");
+    };
+    SimplexWorld.prototype.test = function (point) {
+        var cardinality = 0;
+        for (var _i = 0, _a = this.lines; _i < _a.length; _i++) {
+            var _b = _a[_i], start = _b[0], end = _b[1];
+            if (start.y <= point.y && end.y >= point.y ||
+                start.y >= point.y && end.y <= point.y) {
+                var slope = (end.y - start.y) / (end.x - start.x);
+                var intercept = start.y - slope * start.x;
+                var intersect_x = (point.y - intercept) / slope;
+                if (intersect_x < point.x) {
+                    cardinality++;
+                }
+            }
+        }
+        return cardinality % 2 == 0;
+    };
+    return SimplexWorld;
+}());
+exports.SimplexWorld = SimplexWorld;
+
+},{"./marchingsquares":3,"./perlin":4,"./point":5}]},{},[2]);

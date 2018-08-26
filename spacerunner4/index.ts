@@ -1,22 +1,12 @@
-import * as perlin from "./perlin"
 import { Point } from "./point"
-import { marching_squares } from "./marchingsquares";
+import { Camera, CameraTrack } from "./camera"
+import { SimplexWorld, seedWorld } from "./simplexworld"
+import { rngFromString } from "./rand";
 
-const canvas: HTMLCanvasElement = document.getElementById("mainCanvas") as HTMLCanvasElement
-const ctx: CanvasRenderingContext2D = canvas.getContext("2d")
-
-const seed = Math.random();
-perlin.seed(seed)
-
-const worldSize = (1 << 10) + 1
-const gridSize = 32
-const simplex_scale = 256;
-const simplex_offset = 0.25;
 const speed_damp = 0.02
 const rot_damp = 8
-const thrust = 75
-const rotation = 32
-const falloff_grids = 5
+const thrust = 100
+const rotation = 40
 const max_reset = 0.75
 
 const shipColors = [
@@ -28,30 +18,33 @@ const shipColors = [
     "Purple",
 ]
 
+// function blah() {
+//     if (!location.hash) {
+//         location.hash = "" + ((Math.random() * 10000) | 0)
+//     }
+//     const random = rngFromString(location.hash);
+//     const rng = random.nextFloat.bind(random);
+//     seedWorld(rng())
+// }
+
+// blah();
+
 class Settings {
     ship_color: string;
     spawn_point: Point;
     target_point: Point;
 
     constructor() {
-        this.ship_color = shipColors[Math.floor(Math.random() * shipColors.length)]
-        this.spawn_point = this.choose_point();
-        this.target_point = this.choose_point();
+        if (!location.hash) {
+            location.hash = "" + ((Math.random() * 10000) | 0)
+        }
+        const random = rngFromString(location.hash);
+        const rng = random.nextFloat.bind(random);
+        seedWorld(rng())
+        this.ship_color = shipColors[Math.floor(rng() * shipColors.length)]
+        this.spawn_point = SimplexWorld.choose_point(rng);
+        this.target_point = SimplexWorld.choose_point(rng);
     }
-
-    choose_point(): Point {
-        let point = new Point(0, 0);
-        do {
-            point = new Point((Math.random() * 2 - 1) * worldSize, (Math.random() * 2 - 1) * worldSize);
-        } while (sample_noise(point.x, point.y) < 1 - 0.5 * (1 - simplex_offset));
-        return point;
-    }
-}
-
-function sample_noise(x: number, y: number) {
-    let outside_boundary = worldSize - falloff_grids * gridSize;
-    let outside = Math.max(x - outside_boundary, -x - outside_boundary, y - outside_boundary, -y - outside_boundary, 0.0) / (gridSize * falloff_grids);
-    return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - outside * outside * (1 + simplex_offset);
 }
 
 function sign(x: number): number {
@@ -66,127 +59,6 @@ function sign(x: number): number {
 
 function has<T>(arr: Array<T>, v: T): boolean {
     return arr.some(x => x == v)
-}
-
-class Camera {
-    delta: Point
-    scale: number
-
-    constructor(center: Point, scale: number) {
-        this.delta = Point.sub(new Point(0, 0), center)
-        this.scale = scale
-    }
-
-    fill(poly: Array<Point>, color: string) {
-        ctx.fillStyle = color
-        ctx.beginPath()
-        this.drawImpl(poly)
-        ctx.closePath()
-        ctx.fill()
-    }
-
-    draw(poly: Array<Point>, color: string) {
-        ctx.strokeStyle = color
-        ctx.beginPath()
-        this.drawImpl(poly)
-        ctx.closePath()
-        ctx.stroke()
-    }
-
-    line(poly: Array<Point>, color: string) {
-        ctx.strokeStyle = color
-        ctx.beginPath()
-        this.drawImpl(poly)
-        ctx.stroke()
-    }
-
-    transform(point: Point): Point {
-        return Point.add(Point.mul(Point.add(point, this.delta), this.scale), new Point(canvas.width / 2, canvas.height / 2))
-    }
-
-    transform_scale(distance: number): number {
-        return distance * this.scale
-    }
-
-    drawImpl(poly: Array<Point>) {
-        for (var index = 0; index < poly.length; index++) {
-            var element = this.transform(poly[index])
-            if (index == 0) {
-                ctx.moveTo(element.x, element.y)
-            } else {
-                ctx.lineTo(element.x, element.y)
-            }
-        }
-    }
-
-    draw_segments(poly: Array<[Point, Point]>, color: string) {
-        ctx.strokeStyle = color
-        ctx.beginPath();
-        for (var [start_world, end_world] of poly) {
-            let start = this.transform(start_world)
-            let end = this.transform(end_world)
-            ctx.moveTo(start.x, start.y);
-            ctx.lineTo(end.x, end.y);
-        }
-        ctx.stroke()
-    }
-
-    circle(center: Point, radius: number, color: string) {
-        ctx.strokeStyle = color;
-        ctx.beginPath();
-        let center_draw = this.transform(center)
-        ctx.arc(center_draw.x, center_draw.y, this.transform_scale(radius), 0, 2 * Math.PI);
-        ctx.stroke();
-    }
-}
-
-class CameraTrack {
-    point: Point
-
-    constructor(point: Point) {
-        this.point = point
-    }
-
-    track(newPoint: Point, deltaSeconds: number) {
-        var damp = 1 / deltaSeconds
-        this.point = Point.mul(Point.add(Point.mul(this.point, damp), newPoint), 1 / (damp + 1))
-    }
-}
-
-class SimplexWorld {
-    lines: Array<[Point, Point]>
-
-    constructor() {
-        let mapped_start = Math.floor(worldSize / gridSize);
-        let mapped_size = mapped_start * 2;
-
-        this.lines = marching_squares(function (x, y) { return sample_noise(x * gridSize, y * gridSize); }, mapped_size, mapped_size, -mapped_start, -mapped_start)
-        for (var item of this.lines) {
-            item[0] = Point.mul(item[0], gridSize);
-            item[1] = Point.mul(item[1], gridSize);
-        }
-    }
-
-    draw(camera: Camera, point: Point) {
-        camera.draw_segments(this.lines, "green")
-    }
-
-    // returns true if point is bad
-    test(point: Point): boolean {
-        let cardinality = 0;
-        for (var [start, end] of this.lines) {
-            if (start.y <= point.y && end.y >= point.y ||
-                start.y >= point.y && end.y <= point.y) {
-                let slope = (end.y - start.y) / (end.x - start.x);
-                let intercept = start.y - slope * start.x;
-                let intersect_x = (point.y - intercept) / slope;
-                if (intersect_x < point.x) {
-                    cardinality++;
-                }
-            }
-        }
-        return cardinality % 2 == 0;
-    }
 }
 
 function ship_points(pos: Point, rot: number): Array<Point> {
@@ -320,6 +192,7 @@ class Ship {
 class Target {
     pos: Point
     win: number
+    static targetRadius = 80
 
     constructor(settings: Settings) {
         this.pos = settings.target_point
@@ -328,7 +201,7 @@ class Target {
 
     draw(camera: Camera) {
         for (var i = 1; i < 10 + this.win; i++) {
-            camera.circle(this.pos, gridSize * i / 5, "Blue")
+            camera.circle(this.pos, Target.targetRadius / 10 * i, "Blue")
         }
     }
 
@@ -342,7 +215,7 @@ class Target {
         if (this.win == 0) {
             let diff = Point.sub(ship.pos, this.pos);
             let dist = Math.sqrt(diff.x * diff.x + diff.y * diff.y)
-            if (dist < gridSize * 2) {
+            if (dist < Target.targetRadius) {
                 this.win = 1
             }
         }
@@ -383,7 +256,30 @@ class ShipRecord {
     //}
 
     draw(camera: Camera, time: number) {
-        camera.line(this.history, "#f0f0f0")
+        camera.line(this.history, "#a0a0a0")
+    }
+}
+
+class HighScore {
+    highScore: number
+    lastScore: number
+
+    constructor() {
+        this.highScore = 0;
+        this.lastScore = 0;
+    }
+
+    onFinish(time: number) {
+        this.lastScore = time;
+        if (time < this.highScore || this.highScore == 0) {
+            this.highScore = time;
+        }
+    }
+
+    draw(camera: Camera, time: number) {
+        camera.text(`high score: ${this.highScore}`, 0);
+        camera.text(`last score: ${this.lastScore}`, 1);
+        camera.text(`curr score: ${time}`, 2);
     }
 }
 
@@ -397,6 +293,7 @@ class Universe {
     reset: number
     records: Array<ShipRecord>
     cur_record: ShipRecord
+    high_score: HighScore
     current_time: number
     draw_records: boolean
 
@@ -410,6 +307,7 @@ class Universe {
         this.previousMillis = 0;
         this.reset = 0;
         this.cur_record = new ShipRecord();
+        this.high_score = new HighScore();
         this.records = [];
         this.current_time = 0;
         this.draw_records = true;
@@ -427,6 +325,7 @@ class Universe {
         this.camera_track.track(toTrack, deltaSeconds)
         if (this.target.update(this.ship)) {
             if (this.reset == 0) {
+                this.high_score.onFinish(this.current_time);
                 this.reset += deltaSeconds;
             }
         }
@@ -460,10 +359,10 @@ class Universe {
     }
 
     drawScene() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
         let reset_x = this.reset * (Math.PI / (2 * max_reset));
         var scale = Math.exp(Math.log(1.5) * (Math.tan(reset_x) - reset_x))
         var camera = new Camera(this.camera_track.point, scale)
+        camera.begin()
         this.simplex_world.draw(camera, this.ship.pos)
         if (this.draw_records) {
             for (var record of this.records) {
@@ -472,23 +371,13 @@ class Universe {
         }
         this.ship.draw(camera)
         this.target.draw(camera)
-    }
-
-    resize() {
-        var width = canvas.clientWidth
-        var height = canvas.clientHeight
-        if (canvas.width != width ||
-            canvas.height != height) {
-            canvas.width = width
-            canvas.height = height
-        }
+        this.high_score.draw(camera, this.current_time)
     }
 
     frame(currentMillis: number) {
         var deltaSeconds = (currentMillis - this.previousMillis) / 1000
         this.previousMillis = currentMillis
         deltaSeconds = Math.min(deltaSeconds, 1)
-        this.resize()
         this.updateScene(deltaSeconds)
         this.drawScene()
         window.requestAnimationFrame(x => this.frame(x))
