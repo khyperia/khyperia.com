@@ -2,19 +2,22 @@ import { Point } from "./point"
 
 const canvas: HTMLCanvasElement = document.getElementById("mainCanvas") as HTMLCanvasElement
 const ctx: CanvasRenderingContext2D = canvas.getContext("2d")
+const screen_size = 225
 
 export class Camera {
     delta: Point
+    // scale = screen space / world space
     scale: number
 
     constructor(center: Point, scale: number) {
+        var normalizing_scale = ((canvas.width + canvas.height) / 2) / screen_size;
         this.delta = Point.sub(new Point(0, 0), center)
-        this.scale = scale
+        this.scale = scale * normalizing_scale
     }
 
     resize() {
-        var width = canvas.clientWidth
-        var height = canvas.clientHeight
+        let width = canvas.clientWidth
+        let height = canvas.clientHeight
         if (canvas.width != width ||
             canvas.height != height) {
             canvas.width = width
@@ -22,9 +25,13 @@ export class Camera {
         }
     }
 
+    clear() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+    }
+
     begin() {
         this.resize()
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        this.clear()
     }
 
     fill(poly: Array<Point>, color: string) {
@@ -59,8 +66,8 @@ export class Camera {
     }
 
     drawImpl(poly: Array<Point>) {
-        for (var index = 0; index < poly.length; index++) {
-            var element = this.transform(poly[index])
+        for (let index = 0; index < poly.length; index++) {
+            let element = this.transform(poly[index])
             if (index == 0) {
                 ctx.moveTo(element.x, element.y)
             } else {
@@ -72,7 +79,7 @@ export class Camera {
     draw_segments(poly: Array<[Point, Point]>, color: string) {
         ctx.strokeStyle = color
         ctx.beginPath();
-        for (var [start_world, end_world] of poly) {
+        for (let [start_world, end_world] of poly) {
             let start = this.transform(start_world)
             let end = this.transform(end_world)
             ctx.moveTo(start.x, start.y);
@@ -103,8 +110,9 @@ export class CameraTrack {
         this.point = point
     }
 
-    track(newPoint: Point, deltaSeconds: number) {
-        var damp = 1 / deltaSeconds
+    track(position: Point, velocity: Point, deltaSeconds: number) {
+        let newPoint = Point.add(position, Point.mul(velocity, 2))
+        let damp = 1 / deltaSeconds
         this.point = Point.mul(Point.add(Point.mul(this.point, damp), newPoint), 1 / (damp + 1))
     }
 }

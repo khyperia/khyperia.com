@@ -1,6 +1,6 @@
 // https://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript
 function hashString(str: string) {
-    var hash = 0, i, chr;
+    let hash = 0, i, chr;
     if (str.length === 0) return hash;
     for (i = 0; i < str.length; i++) {
         chr = str.charCodeAt(i);
@@ -35,8 +35,8 @@ class RNG {
     nextRange(start: number, end: number) {
         // returns in range [start, end): including start, excluding end
         // can't modulu nextInt because of weak randomness in lower bits
-        var rangeSize = end - start;
-        var randomUnder1 = this.nextInt() / this.m;
+        let rangeSize = end - start;
+        let randomUnder1 = this.nextInt() / this.m;
         return start + Math.floor(randomUnder1 * rangeSize);
     }
 

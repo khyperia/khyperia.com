@@ -3,10 +3,12 @@ import { Camera, CameraTrack } from "./camera"
 import { SimplexWorld, seedWorld } from "./simplexworld"
 import { rngFromString } from "./rand";
 
+const ship_size = 2
+const ship_shape_angle = 0.5
 const speed_damp = 0.02
-const rot_damp = 8
-const thrust = 100
-const rotation = 40
+const rot_damp = 6
+const thrust = 18
+const rotation = 25
 const max_reset = 0.75
 
 const shipColors = [
@@ -17,17 +19,6 @@ const shipColors = [
     "Blue",
     "Purple",
 ]
-
-// function blah() {
-//     if (!location.hash) {
-//         location.hash = "" + ((Math.random() * 10000) | 0)
-//     }
-//     const random = rngFromString(location.hash);
-//     const rng = random.nextFloat.bind(random);
-//     seedWorld(rng())
-// }
-
-// blah();
 
 class Settings {
     ship_color: string;
@@ -42,8 +33,8 @@ class Settings {
         const rng = random.nextFloat.bind(random);
         seedWorld(rng())
         this.ship_color = shipColors[Math.floor(rng() * shipColors.length)]
-        this.spawn_point = SimplexWorld.choose_point(rng);
-        this.target_point = SimplexWorld.choose_point(rng);
+        this.spawn_point = SimplexWorld.choose_start(rng);
+        this.target_point = SimplexWorld.choose_end(rng);
     }
 }
 
@@ -62,14 +53,12 @@ function has<T>(arr: Array<T>, v: T): boolean {
 }
 
 function ship_points(pos: Point, rot: number): Array<Point> {
-    var radius = 10
-    var theta = Math.PI * 4 / 5
-    var offsets = [
-        new Point(Math.cos(rot + theta) * radius, Math.sin(rot + theta) * radius),
-        new Point(Math.cos(rot - theta) * radius, Math.sin(rot - theta) * radius),
-        new Point(Math.cos(rot) * radius, Math.sin(rot) * radius),
+    let offsets = [
+        new Point(Math.cos(rot + ship_shape_angle) * -ship_size, Math.sin(rot + ship_shape_angle) * -ship_size),
+        new Point(Math.cos(rot - ship_shape_angle) * -ship_size, Math.sin(rot - ship_shape_angle) * -ship_size),
+        new Point(Math.cos(rot) * ship_size, Math.sin(rot) * ship_size),
     ]
-    for (var i = 0; i < offsets.length; i++) {
+    for (let i = 0; i < offsets.length; i++) {
         offsets[i] = Point.add(pos, offsets[i])
     }
     return offsets
@@ -105,15 +94,13 @@ class Ship {
     }
 
     thrustPoints() {
-        var radius = 10
-        var length = 2
-        var theta = Math.PI * 7 / 8
-        var offsets = [
-            new Point(Math.cos(this.rot + theta) * radius, Math.sin(this.rot + theta) * radius),
-            new Point(Math.cos(this.rot - theta) * radius, Math.sin(this.rot - theta) * radius),
-            new Point(Math.cos(this.rot) * radius * -length, Math.sin(this.rot) * radius * -length),
+        let theta = ship_shape_angle / 2;
+        let offsets = [
+            new Point(Math.cos(this.rot + theta) * -ship_size, Math.sin(this.rot + theta) * -ship_size),
+            new Point(Math.cos(this.rot - theta) * -ship_size, Math.sin(this.rot - theta) * -ship_size),
+            new Point(Math.cos(this.rot) * -2 * ship_size, Math.sin(this.rot) * -2 * ship_size),
         ]
-        for (var i = 0; i < offsets.length; i++) {
+        for (let i = 0; i < offsets.length; i++) {
             offsets[i] = Point.add(this.pos, offsets[i])
         }
         return offsets
@@ -127,7 +114,7 @@ class Ship {
     }
 
     test(): boolean {
-        for (var point of this.points()) {
+        for (let point of this.points()) {
             if (this.world.test(point)) {
                 return true;
             }
@@ -145,14 +132,14 @@ class Ship {
     }
 
     update(deltaSeconds: number): boolean {
-        var my_speed_damp = 1 - speed_damp * deltaSeconds
-        var my_rot_damp = 1 - rot_damp * deltaSeconds
-        var my_thrust = thrust * deltaSeconds
-        var my_rotation = rotation * deltaSeconds
+        let my_speed_damp = 1 - speed_damp * deltaSeconds
+        let my_rot_damp = 1 - rot_damp * deltaSeconds
+        let my_thrust = thrust * deltaSeconds
+        let my_rotation = rotation * deltaSeconds
         my_speed_damp = Math.max(my_speed_damp, 0.1)
         my_rot_damp = Math.max(my_rot_damp, 0.1)
         if (this.throttle) {
-            var thrustDir = new Point(Math.cos(this.rot), Math.sin(this.rot))
+            let thrustDir = new Point(Math.cos(this.rot), Math.sin(this.rot))
             this.vel = Point.add(this.vel, Point.mul(thrustDir, my_thrust))
         }
         if (this.rotating != 0) {
@@ -192,7 +179,7 @@ class Ship {
 class Target {
     pos: Point
     win: number
-    static targetRadius = 80
+    static targetRadius = 10
 
     constructor(settings: Settings) {
         this.pos = settings.target_point
@@ -200,7 +187,7 @@ class Target {
     }
 
     draw(camera: Camera) {
-        for (var i = 1; i < 10 + this.win; i++) {
+        for (let i = 1; i < 10 + this.win; i++) {
             camera.circle(this.pos, Target.targetRadius / 10 * i, "Blue")
         }
     }
@@ -240,20 +227,6 @@ class ShipRecord {
             this.history.push(ship.pos)
         }
     }
-
-    //calculate(time: number): [Point, number] {
-    //    let real_time = time / ship_record_update_rate;
-    //    let index = Math.floor(real_time);
-    //    let dt = real_time - index;
-    //    if (index > this.history.length - 2) {
-    //        return this.history[this.history.length - 1]
-    //    }
-    //    let cur = this.history[index];
-    //    let next = this.history[index + 1];
-    //    let actual_pos = Point.add(Point.mul(cur[0], 1 - dt), Point.mul(next[0], dt))
-    //    let actual_rot = cur[1] * (1 - dt) + next[1] * dt
-    //    return [actual_pos, actual_rot]
-    //}
 
     draw(camera: Camera, time: number) {
         camera.line(this.history, "#a0a0a0")
@@ -298,7 +271,7 @@ class Universe {
     draw_records: boolean
 
     constructor() {
-        var settings = new Settings();
+        let settings = new Settings();
         this.simplex_world = new SimplexWorld()
         this.ship = new Ship(settings, this.simplex_world)
         this.camera_track = new CameraTrack(this.ship.pos)
@@ -321,8 +294,7 @@ class Universe {
                 this.reset += deltaSeconds;
             }
         }
-        var toTrack = new Point(this.ship.pos.x + this.ship.vel.x * 2, this.ship.pos.y + this.ship.vel.y * 2)
-        this.camera_track.track(toTrack, deltaSeconds)
+        this.camera_track.track(this.ship.pos, this.ship.vel, deltaSeconds)
         if (this.target.update(this.ship)) {
             if (this.reset == 0) {
                 this.high_score.onFinish(this.current_time);
@@ -360,12 +332,12 @@ class Universe {
 
     drawScene() {
         let reset_x = this.reset * (Math.PI / (2 * max_reset));
-        var scale = Math.exp(Math.log(1.5) * (Math.tan(reset_x) - reset_x))
-        var camera = new Camera(this.camera_track.point, scale)
+        let scale = Math.exp(Math.log(1.5) * (Math.tan(reset_x) - reset_x))
+        let camera = new Camera(this.camera_track.point, scale)
         camera.begin()
         this.simplex_world.draw(camera, this.ship.pos)
         if (this.draw_records) {
-            for (var record of this.records) {
+            for (let record of this.records) {
                 record.draw(camera, this.current_time)
             }
         }
@@ -375,7 +347,7 @@ class Universe {
     }
 
     frame(currentMillis: number) {
-        var deltaSeconds = (currentMillis - this.previousMillis) / 1000
+        let deltaSeconds = (currentMillis - this.previousMillis) / 1000
         this.previousMillis = currentMillis
         deltaSeconds = Math.min(deltaSeconds, 1)
         this.updateScene(deltaSeconds)
@@ -393,7 +365,7 @@ class Universe {
     }
 
     keyUp(e: KeyboardEvent) {
-        for (var i = this.pressedKeys.length - 1; i >= 0; i--) {
+        for (let i = this.pressedKeys.length - 1; i >= 0; i--) {
             if (this.pressedKeys[i] === e.keyCode) {
                 this.pressedKeys.splice(i, 1);
             }

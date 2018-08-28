@@ -1,103 +1,72 @@
 import { Point } from "./point"
 
-export function marching_squares(func: (x: number, y: number) => number, width: number, height: number, off_x: number, off_y: number): Array<[Point, Point]> {
+export function marching_squares_aligned(func: (x: number, y: number) => number, width: number, height: number, center_x: number, center_y: number, grid_size: number): Array<[Point, Point]> {
+    let true_start_x = center_x - width;
+    let true_start_y = center_y - height;
+    let start_x = Math.floor((center_x - width) / grid_size);
+    let start_y = Math.floor((center_y - height) / grid_size);
+    let end_x = Math.ceil((center_x + width) / grid_size);
+    let end_y = Math.ceil((center_y + height) / grid_size);
+    let adj_width = end_x - start_x;
+    let adj_height = end_y - start_y;
+
+    let result = marching_squares(function (x, y) { return func(x * grid_size + true_start_x, y * grid_size + true_start_y); }, adj_width, adj_height)
+
+    for (let item of result) {
+        item[0] = Point.add(Point.mul(item[0], grid_size), new Point(true_start_x, true_start_y));
+        item[1] = Point.add(Point.mul(item[1], grid_size), new Point(true_start_x, true_start_y));
+    }
+
+    return result;
+}
+
+export function marching_squares(func: (x: number, y: number) => number, width: number, height: number): Array<[Point, Point]> {
+    let points = new Array<Point>();
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            points.push(center_square(func, x, y));
+        }
+    }
     let arr = new Array<[Point, Point]>();
-    for (var y = 0; y < height; y++) {
-        for (var x = 0; x < width; x++) {
-            one_square(func, x + off_x, y + off_y, arr)
+    for (let y = 0; y < height - 1; y++) {
+        for (let x = 0; x < width - 1; x++) {
+            if (do_line(func, x + 1, y, 0, 1)) {
+                arr.push([points[y * width + x], points[y * width + x + 1]]);
+            }
+            if (do_line(func, x, y + 1, 1, 0)) {
+                arr.push([points[y * width + x], points[(y + 1) * width + x]]);
+            }
         }
     }
     return arr;
 }
 
-function one_square(func: (x: number, y: number) => number, x: number, y: number, arr: Array<[Point, Point]>) {
-    // v(y)(x)
-    let v00 = func(x, y);
-    let v01 = func(x + 1, y);
-    let v10 = func(x, y + 1);
-    let v11 = func(x + 1, y + 1);
-    // edge (negative|positive) (x|y)
-    // 0 = x * (v1 - v0) + v0
-    // x = v0 / (v0 - v1)
-    let eny_val = v00 / (v00 - v01);
-    let epy_val = v10 / (v10 - v11);
-    let enx_val = v00 / (v00 - v10);
-    let epx_val = v01 / (v01 - v11);
-    let eny = new Point(eny_val + x, 0.0 + y);
-    let epy = new Point(epy_val + x, 1.0 + y);
-    let enx = new Point(0.0 + x, enx_val + y);
-    let epx = new Point(1.0 + x, epx_val + y);
+function do_line(func: (x: number, y: number) => number, x: number, y: number, dx: number, dy: number): boolean {
+    let center = func(x, y);
+    let other = func(x + dx, y + dy);
+    return (center < 0) != (other < 0);
+}
 
-    let square_type = 0;
-    if (v00 < 0) {
-        square_type += 8;
+function center_square(func: (x: number, y: number) => number, x: number, y: number): Point {
+    let p = [
+        edge_point(func, x, y, 1, 0),
+        edge_point(func, x, y + 1, 1, 0),
+        edge_point(func, x, y, 0, 1),
+        edge_point(func, x + 1, y, 0, 1)
+    ].filter(x => x !== null);
+    if (p.length == 0) {
+        return null;
     }
-    if (v01 < 0) {
-        square_type += 4;
-    }
-    if (v11 < 0) {
-        square_type += 2;
-    }
-    if (v10 < 0) {
-        square_type += 1;
-    }
+    let sum = p.reduce((left, right) => Point.add(left, right));
+    return Point.mul(sum, 1.0 / p.length);
+}
 
-    switch (square_type) {
-        case 0: break;
-        case 1:
-            arr.push([enx, epy]);
-            break;
-        case 2:
-            arr.push([epy, epx]);
-            break;
-        case 3:
-            arr.push([enx, epx]);
-            break;
-        case 4:
-            arr.push([epx, eny]);
-            break;
-        case 5:
-            if (func(x + 0.5, y + 0.5) < 0) {
-                arr.push([enx, eny]);
-                arr.push([epx, epy]);
-            } else {
-                arr.push([enx, epy]);
-                arr.push([epx, eny]);
-            }
-            break;
-        case 6:
-            arr.push([epy, eny]);
-            break;
-        case 7:
-            arr.push([enx, eny]);
-            break;
-        case 8:
-            arr.push([eny, enx]);
-            break;
-        case 9:
-            arr.push([eny, epy]);
-            break;
-        case 10:
-            if (func(x + 0.5, y + 0.5) < 0) {
-                arr.push([epy, enx]);
-                arr.push([eny, epx]);
-            } else {
-                arr.push([epy, epx]);
-                arr.push([eny, enx]);
-            }
-            break;
-        case 11:
-            arr.push([eny, epx]);
-            break;
-        case 12:
-            arr.push([epx, enx]);
-            break;
-        case 13:
-            arr.push([epx, epy]);
-            break;
-        case 14:
-            arr.push([epy, enx]);
-            break;
-        case 15: break;
+function edge_point(func: (x: number, y: number) => number, x: number, y: number, dx: number, dy: number): Point {
+    let center = func(x, y);
+    let other = func(x + dx, y + dy);
+    let val = center / (center - other);
+    if (val < 0 || val > 1) {
+        return null;
     }
+    return new Point(x + dx * val, y + dy * val);
 }

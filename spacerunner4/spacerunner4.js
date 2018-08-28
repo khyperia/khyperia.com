@@ -4,10 +4,12 @@ exports.__esModule = true;
 var point_1 = require("./point");
 var canvas = document.getElementById("mainCanvas");
 var ctx = canvas.getContext("2d");
+var screen_size = 225;
 var Camera = (function () {
     function Camera(center, scale) {
+        var normalizing_scale = ((canvas.width + canvas.height) / 2) / screen_size;
         this.delta = point_1.Point.sub(new point_1.Point(0, 0), center);
-        this.scale = scale;
+        this.scale = scale * normalizing_scale;
     }
     Camera.prototype.resize = function () {
         var width = canvas.clientWidth;
@@ -18,9 +20,12 @@ var Camera = (function () {
             canvas.height = height;
         }
     };
+    Camera.prototype.clear = function () {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
     Camera.prototype.begin = function () {
         this.resize();
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        this.clear();
     };
     Camera.prototype.fill = function (poly, color) {
         ctx.fillStyle = color;
@@ -90,7 +95,8 @@ var CameraTrack = (function () {
     function CameraTrack(point) {
         this.point = point;
     }
-    CameraTrack.prototype.track = function (newPoint, deltaSeconds) {
+    CameraTrack.prototype.track = function (position, velocity, deltaSeconds) {
+        var newPoint = point_1.Point.add(position, point_1.Point.mul(velocity, 2));
         var damp = 1 / deltaSeconds;
         this.point = point_1.Point.mul(point_1.Point.add(point_1.Point.mul(this.point, damp), newPoint), 1 / (damp + 1));
     };
@@ -105,10 +111,12 @@ var point_1 = require("./point");
 var camera_1 = require("./camera");
 var simplexworld_1 = require("./simplexworld");
 var rand_1 = require("./rand");
+var ship_size = 2;
+var ship_shape_angle = 0.5;
 var speed_damp = 0.02;
-var rot_damp = 8;
-var thrust = 100;
-var rotation = 40;
+var rot_damp = 6;
+var thrust = 18;
+var rotation = 25;
 var max_reset = 0.75;
 var shipColors = [
     "DarkRed",
@@ -127,8 +135,8 @@ var Settings = (function () {
         var rng = random.nextFloat.bind(random);
         simplexworld_1.seedWorld(rng());
         this.ship_color = shipColors[Math.floor(rng() * shipColors.length)];
-        this.spawn_point = simplexworld_1.SimplexWorld.choose_point(rng);
-        this.target_point = simplexworld_1.SimplexWorld.choose_point(rng);
+        this.spawn_point = simplexworld_1.SimplexWorld.choose_start(rng);
+        this.target_point = simplexworld_1.SimplexWorld.choose_end(rng);
     }
     return Settings;
 }());
@@ -147,12 +155,10 @@ function has(arr, v) {
     return arr.some(function (x) { return x == v; });
 }
 function ship_points(pos, rot) {
-    var radius = 10;
-    var theta = Math.PI * 4 / 5;
     var offsets = [
-        new point_1.Point(Math.cos(rot + theta) * radius, Math.sin(rot + theta) * radius),
-        new point_1.Point(Math.cos(rot - theta) * radius, Math.sin(rot - theta) * radius),
-        new point_1.Point(Math.cos(rot) * radius, Math.sin(rot) * radius),
+        new point_1.Point(Math.cos(rot + ship_shape_angle) * -ship_size, Math.sin(rot + ship_shape_angle) * -ship_size),
+        new point_1.Point(Math.cos(rot - ship_shape_angle) * -ship_size, Math.sin(rot - ship_shape_angle) * -ship_size),
+        new point_1.Point(Math.cos(rot) * ship_size, Math.sin(rot) * ship_size),
     ];
     for (var i = 0; i < offsets.length; i++) {
         offsets[i] = point_1.Point.add(pos, offsets[i]);
@@ -176,13 +182,11 @@ var Ship = (function () {
         return ship_points(this.pos, this.rot);
     };
     Ship.prototype.thrustPoints = function () {
-        var radius = 10;
-        var length = 2;
-        var theta = Math.PI * 7 / 8;
+        var theta = ship_shape_angle / 2;
         var offsets = [
-            new point_1.Point(Math.cos(this.rot + theta) * radius, Math.sin(this.rot + theta) * radius),
-            new point_1.Point(Math.cos(this.rot - theta) * radius, Math.sin(this.rot - theta) * radius),
-            new point_1.Point(Math.cos(this.rot) * radius * -length, Math.sin(this.rot) * radius * -length),
+            new point_1.Point(Math.cos(this.rot + theta) * -ship_size, Math.sin(this.rot + theta) * -ship_size),
+            new point_1.Point(Math.cos(this.rot - theta) * -ship_size, Math.sin(this.rot - theta) * -ship_size),
+            new point_1.Point(Math.cos(this.rot) * -2 * ship_size, Math.sin(this.rot) * -2 * ship_size),
         ];
         for (var i = 0; i < offsets.length; i++) {
             offsets[i] = point_1.Point.add(this.pos, offsets[i]);
@@ -285,7 +289,7 @@ var Target = (function () {
         }
         return this.win != 0;
     };
-    Target.targetRadius = 80;
+    Target.targetRadius = 10;
     return Target;
 }());
 var ship_record_update_rate = 0.1;
@@ -348,8 +352,7 @@ var Universe = (function () {
                 this.reset += deltaSeconds;
             }
         }
-        var toTrack = new point_1.Point(this.ship.pos.x + this.ship.vel.x * 2, this.ship.pos.y + this.ship.vel.y * 2);
-        this.camera_track.track(toTrack, deltaSeconds);
+        this.camera_track.track(this.ship.pos, this.ship.vel, deltaSeconds);
         if (this.target.update(this.ship)) {
             if (this.reset == 0) {
                 this.high_score.onFinish(this.current_time);
@@ -437,102 +440,71 @@ new Universe().register();
 "use strict";
 exports.__esModule = true;
 var point_1 = require("./point");
-function marching_squares(func, width, height, off_x, off_y) {
-    var arr = new Array();
+function marching_squares_aligned(func, width, height, center_x, center_y, grid_size) {
+    var true_start_x = center_x - width;
+    var true_start_y = center_y - height;
+    var start_x = Math.floor((center_x - width) / grid_size);
+    var start_y = Math.floor((center_y - height) / grid_size);
+    var end_x = Math.ceil((center_x + width) / grid_size);
+    var end_y = Math.ceil((center_y + height) / grid_size);
+    var adj_width = end_x - start_x;
+    var adj_height = end_y - start_y;
+    var result = marching_squares(function (x, y) { return func(x * grid_size + true_start_x, y * grid_size + true_start_y); }, adj_width, adj_height);
+    for (var _i = 0, result_1 = result; _i < result_1.length; _i++) {
+        var item = result_1[_i];
+        item[0] = point_1.Point.add(point_1.Point.mul(item[0], grid_size), new point_1.Point(true_start_x, true_start_y));
+        item[1] = point_1.Point.add(point_1.Point.mul(item[1], grid_size), new point_1.Point(true_start_x, true_start_y));
+    }
+    return result;
+}
+exports.marching_squares_aligned = marching_squares_aligned;
+function marching_squares(func, width, height) {
+    var points = new Array();
     for (var y = 0; y < height; y++) {
         for (var x = 0; x < width; x++) {
-            one_square(func, x + off_x, y + off_y, arr);
+            points.push(center_square(func, x, y));
+        }
+    }
+    var arr = new Array();
+    for (var y = 0; y < height - 1; y++) {
+        for (var x = 0; x < width - 1; x++) {
+            if (do_line(func, x + 1, y, 0, 1)) {
+                arr.push([points[y * width + x], points[y * width + x + 1]]);
+            }
+            if (do_line(func, x, y + 1, 1, 0)) {
+                arr.push([points[y * width + x], points[(y + 1) * width + x]]);
+            }
         }
     }
     return arr;
 }
 exports.marching_squares = marching_squares;
-function one_square(func, x, y, arr) {
-    var v00 = func(x, y);
-    var v01 = func(x + 1, y);
-    var v10 = func(x, y + 1);
-    var v11 = func(x + 1, y + 1);
-    var eny_val = v00 / (v00 - v01);
-    var epy_val = v10 / (v10 - v11);
-    var enx_val = v00 / (v00 - v10);
-    var epx_val = v01 / (v01 - v11);
-    var eny = new point_1.Point(eny_val + x, 0.0 + y);
-    var epy = new point_1.Point(epy_val + x, 1.0 + y);
-    var enx = new point_1.Point(0.0 + x, enx_val + y);
-    var epx = new point_1.Point(1.0 + x, epx_val + y);
-    var square_type = 0;
-    if (v00 < 0) {
-        square_type += 8;
+function do_line(func, x, y, dx, dy) {
+    var center = func(x, y);
+    var other = func(x + dx, y + dy);
+    return (center < 0) != (other < 0);
+}
+function center_square(func, x, y) {
+    var p = [
+        edge_point(func, x, y, 1, 0),
+        edge_point(func, x, y + 1, 1, 0),
+        edge_point(func, x, y, 0, 1),
+        edge_point(func, x + 1, y, 0, 1)
+    ].filter(function (x) { return x !== null; });
+    if (p.length == 0) {
+        return null;
     }
-    if (v01 < 0) {
-        square_type += 4;
+    var sum = p.reduce(function (left, right) { return point_1.Point.add(left, right); });
+    return point_1.Point.mul(sum, 1.0 / p.length);
+}
+function edge_point(func, x, y, dx, dy) {
+    var center = func(x, y);
+    var other = func(x + dx, y + dy);
+    var val = center / (center - other);
+    if (val < 0 || val > 1) {
+        return null;
     }
-    if (v11 < 0) {
-        square_type += 2;
-    }
-    if (v10 < 0) {
-        square_type += 1;
-    }
-    switch (square_type) {
-        case 0: break;
-        case 1:
-            arr.push([enx, epy]);
-            break;
-        case 2:
-            arr.push([epy, epx]);
-            break;
-        case 3:
-            arr.push([enx, epx]);
-            break;
-        case 4:
-            arr.push([epx, eny]);
-            break;
-        case 5:
-            if (func(x + 0.5, y + 0.5) < 0) {
-                arr.push([enx, eny]);
-                arr.push([epx, epy]);
-            }
-            else {
-                arr.push([enx, epy]);
-                arr.push([epx, eny]);
-            }
-            break;
-        case 6:
-            arr.push([epy, eny]);
-            break;
-        case 7:
-            arr.push([enx, eny]);
-            break;
-        case 8:
-            arr.push([eny, enx]);
-            break;
-        case 9:
-            arr.push([eny, epy]);
-            break;
-        case 10:
-            if (func(x + 0.5, y + 0.5) < 0) {
-                arr.push([epy, enx]);
-                arr.push([eny, epx]);
-            }
-            else {
-                arr.push([epy, epx]);
-                arr.push([eny, enx]);
-            }
-            break;
-        case 11:
-            arr.push([eny, epx]);
-            break;
-        case 12:
-            arr.push([epx, enx]);
-            break;
-        case 13:
-            arr.push([epx, epy]);
-            break;
-        case 14:
-            arr.push([epy, enx]);
-            break;
-        case 15: break;
-    }
+    return new point_1.Point(x + dx * val, y + dy * val);
 }
 
 },{"./point":5}],4:[function(require,module,exports){
@@ -581,7 +553,7 @@ function seed(seed) {
         seed |= seed << 8;
     }
     for (var i = 0; i < 256; i++) {
-        var v;
+        var v = void 0;
         if (i & 1) {
             v = p[i] ^ (seed & 255);
         }
@@ -892,9 +864,10 @@ exports.__esModule = true;
 var point_1 = require("./point");
 var perlin = require("./perlin");
 var marchingsquares_1 = require("./marchingsquares");
-var worldSize = (1 << 10) + 1;
-var gridSize = 32;
-var simplex_scale = 256;
+var worldWidth = (1 << 8);
+var worldHeight = (1 << 6);
+var gridSize = 4;
+var simplex_scale = 32;
 var simplex_offset = 0.25;
 var falloff_grids = 5;
 function seedWorld(seed) {
@@ -903,24 +876,36 @@ function seedWorld(seed) {
 exports.seedWorld = seedWorld;
 var SimplexWorld = (function () {
     function SimplexWorld() {
-        var mapped_start = Math.floor(worldSize / gridSize);
-        var mapped_size = mapped_start * 2;
-        this.lines = marchingsquares_1.marching_squares(function (x, y) { return SimplexWorld.sample_noise(x * gridSize, y * gridSize); }, mapped_size, mapped_size, -mapped_start, -mapped_start);
+        this.lines = marchingsquares_1.marching_squares_aligned(SimplexWorld.sample_noise, worldWidth, worldHeight, 0, 0, gridSize);
+        var min = 0;
+        var max = 0;
         for (var _i = 0, _a = this.lines; _i < _a.length; _i++) {
-            var item = _a[_i];
-            item[0] = point_1.Point.mul(item[0], gridSize);
-            item[1] = point_1.Point.mul(item[1], gridSize);
+            var _b = _a[_i], start = _b[0], end = _b[1];
+            min = Math.min(min, start.x);
+            max = Math.max(max, start.x);
         }
+        console.log("Test min: " + min);
+        console.log("Test max: " + max);
     }
     SimplexWorld.sample_noise = function (x, y) {
-        var outside_boundary = worldSize - (falloff_grids + 1) * gridSize;
-        var outside = Math.max(x - outside_boundary, -x - outside_boundary, y - outside_boundary, -y - outside_boundary, 0.0) / (gridSize * falloff_grids);
-        return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - outside * outside * (1 + simplex_offset);
+        var boundary_size = falloff_grids * gridSize;
+        var pad_y = Math.max(Math.abs(y) - (worldHeight - boundary_size), 0) / boundary_size;
+        var pad_x = Math.max(Math.abs(x) - (worldWidth - boundary_size), 0) / boundary_size;
+        var pad = Math.max(pad_x * pad_x, pad_y * pad_y) * 2;
+        var empty_middle = Math.abs(y) / worldHeight;
+        empty_middle = empty_middle * empty_middle - 1;
+        return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - pad - empty_middle;
     };
-    SimplexWorld.choose_point = function (rng) {
+    SimplexWorld.choose_start = function (rng) {
+        return this.choose_point(rng, new point_1.Point(-worldWidth + worldHeight, 0), worldHeight);
+    };
+    SimplexWorld.choose_end = function (rng) {
+        return this.choose_point(rng, new point_1.Point(worldWidth - worldHeight, 0), worldHeight);
+    };
+    SimplexWorld.choose_point = function (rng, offset, radius) {
         var point = new point_1.Point(0, 0);
         do {
-            point = new point_1.Point((rng() * 2 - 1) * worldSize, (rng() * 2 - 1) * worldSize);
+            point = new point_1.Point((rng() * 2 - 1) * radius + offset.x, (rng() * 2 - 1) * radius + offset.y);
         } while (SimplexWorld.sample_noise(point.x, point.y) < 1 - 0.5 * (1 - simplex_offset));
         return point;
     };
@@ -931,11 +916,14 @@ var SimplexWorld = (function () {
         var cardinality = 0;
         for (var _i = 0, _a = this.lines; _i < _a.length; _i++) {
             var _b = _a[_i], start = _b[0], end = _b[1];
-            if (start.y <= point.y && end.y >= point.y ||
-                start.y >= point.y && end.y <= point.y) {
+            if (point.y >= start.y && point.y < end.y ||
+                point.y >= end.y && point.y < start.y) {
                 var slope = (end.y - start.y) / (end.x - start.x);
                 var intercept = start.y - slope * start.x;
                 var intersect_x = (point.y - intercept) / slope;
+                if (slope > 100) {
+                    intersect_x = Math.max(start.x, end.x);
+                }
                 if (intersect_x < point.x) {
                     cardinality++;
                 }
