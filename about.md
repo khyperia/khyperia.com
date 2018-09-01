@@ -1,6 +1,6 @@
 Hi, I'm khy, she/her/hers.
 
-I graduated from Michigan Tech studying computer science. Currently unemployed (please throw job openings at me!)
+I work at Mozilla on Firefox's javascript engine (spidermonkey). I graduated-ish from Michigan Tech studying computer science.
 
 You can find me lots of places. Chances are, if you find a wild khyperia somewhere, it's me. Here are some common ones:
 

@@ -133,7 +133,7 @@ var Settings = (function () {
         }
         var random = rand_1.rngFromString(location.hash);
         var rng = random.nextFloat.bind(random);
-        simplexworld_1.seedWorld(rng());
+        simplexworld_1.seedWorld(rng);
         this.ship_color = shipColors[Math.floor(rng() * shipColors.length)];
         this.spawn_point = simplexworld_1.SimplexWorld.choose_start(rng);
         this.target_point = simplexworld_1.SimplexWorld.choose_end(rng);
@@ -868,10 +868,13 @@ var worldWidth = (1 << 8);
 var worldHeight = (1 << 6);
 var gridSize = 4;
 var simplex_scale = 32;
-var simplex_offset = 0.25;
+var simplex_offset_base = 0.25;
+var simplex_offset_variance = 0.25;
 var falloff_grids = 5;
-function seedWorld(seed) {
-    perlin.seed(seed);
+var simplex_offset = 0.25;
+function seedWorld(rng) {
+    perlin.seed(rng());
+    simplex_offset = simplex_offset_base + (rng() * 2 - 1) * simplex_offset_variance;
 }
 exports.seedWorld = seedWorld;
 var SimplexWorld = (function () {
@@ -892,9 +895,7 @@ var SimplexWorld = (function () {
         var pad_y = Math.max(Math.abs(y) - (worldHeight - boundary_size), 0) / boundary_size;
         var pad_x = Math.max(Math.abs(x) - (worldWidth - boundary_size), 0) / boundary_size;
         var pad = Math.max(pad_x * pad_x, pad_y * pad_y) * 2;
-        var empty_middle = Math.abs(y) / worldHeight;
-        empty_middle = empty_middle * empty_middle - 1;
-        return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - pad - empty_middle;
+        return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - pad;
     };
     SimplexWorld.choose_start = function (rng) {
         return this.choose_point(rng, new point_1.Point(-worldWidth + worldHeight, 0), worldHeight);

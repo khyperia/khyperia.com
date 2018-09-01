@@ -31,7 +31,7 @@ class Settings {
         }
         const random = rngFromString(location.hash);
         const rng = random.nextFloat.bind(random);
-        seedWorld(rng())
+        seedWorld(rng)
         this.ship_color = shipColors[Math.floor(rng() * shipColors.length)]
         this.spawn_point = SimplexWorld.choose_start(rng);
         this.target_point = SimplexWorld.choose_end(rng);

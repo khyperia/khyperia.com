@@ -7,11 +7,14 @@ const worldWidth = (1 << 8)
 const worldHeight = (1 << 6)
 const gridSize = 4
 const simplex_scale = 32;
-const simplex_offset = 0.25;
+const simplex_offset_base = 0.25;
+const simplex_offset_variance = 0.25;
 const falloff_grids = 5
+let simplex_offset = 0.25;
 
-export function seedWorld(seed: number) {
-    perlin.seed(seed)
+export function seedWorld(rng: () => number) {
+    perlin.seed(rng())
+    simplex_offset = simplex_offset_base + (rng() * 2 - 1) * simplex_offset_variance
 }
 
 export class SimplexWorld {
@@ -35,9 +38,7 @@ export class SimplexWorld {
         let pad_y = Math.max(Math.abs(y) - (worldHeight - boundary_size), 0) / boundary_size;
         let pad_x = Math.max(Math.abs(x) - (worldWidth - boundary_size), 0) / boundary_size;
         let pad = Math.max(pad_x * pad_x, pad_y * pad_y) * 2;
-        let empty_middle = Math.abs(y) / worldHeight;
-        empty_middle = empty_middle * empty_middle - 1;
-        return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - pad - empty_middle;
+        return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - pad;
     }
 
     static choose_start(rng: () => number): Point {

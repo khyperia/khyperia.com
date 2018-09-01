@@ -1,6 +1,6 @@
 SHELL:=/bin/bash
-source_files:=$(shell find . -type l -o -type f -a \( -name '*.md' -o -name '*.css' -o -name '*.txt' -o -name '*.jpg' -o -name '*.png' \) )
-kept_html_files:=$(shell find ./mlpds ./spacerunner4 -type f \( -name '*.html' -o -name '*.js' \))
+source_files:=$(shell find . -type l -o -type f -a \( -name '*.md' -o -name '*.css' -o -name '*.txt' -o -name '*.jpg' -o -name '*.png' -o -name '*.ico' \) )
+kept_html_files:=$(shell find ./mlpds ./spacerunner4 ./acefrom.space -type f \( -name '*.html' -o -name '*.js' \))
 f_files:=$(shell find ./f -type f)
 built_files:=$(source_files:.md=.html) $(kept_html_files) $(f_files)
 dest_folder:=/srv/http
