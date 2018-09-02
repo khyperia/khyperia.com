@@ -466,14 +466,20 @@ function marching_squares(func, width, height) {
         }
     }
     var arr = new Array();
-    for (var y = 0; y < height - 1; y++) {
-        for (var x = 0; x < width - 1; x++) {
-            if (do_line(func, x + 1, y, 0, 1)) {
+    for (var y = 0; y < height; y++) {
+        for (var x = 0; x < width; x++) {
+            if (x != width - 1 && do_line(func, x + 1, y, 0, 1)) {
                 arr.push([points[y * width + x], points[y * width + x + 1]]);
             }
-            if (do_line(func, x, y + 1, 1, 0)) {
+            if (y != height - 1 && do_line(func, x, y + 1, 1, 0)) {
                 arr.push([points[y * width + x], points[(y + 1) * width + x]]);
             }
+        }
+    }
+    for (var _i = 0, arr_1 = arr; _i < arr_1.length; _i++) {
+        var _a = arr_1[_i], a = _a[0], b = _a[1];
+        if (a.x === undefined || a.y === undefined || b.x === undefined || b.y === undefined) {
+            throw new Error("Undefined line");
         }
     }
     return arr;
@@ -865,13 +871,13 @@ var point_1 = require("./point");
 var perlin = require("./perlin");
 var marchingsquares_1 = require("./marchingsquares");
 var worldWidth = (1 << 8);
-var worldHeight = (1 << 6);
-var gridSize = 4;
-var simplex_scale = 32;
-var simplex_offset_base = 0.25;
+var worldHeight = (1 << 7);
+var gridSize = 8;
+var simplex_scale = 48;
+var simplex_offset_base = 0.5;
 var simplex_offset_variance = 0.25;
-var falloff_grids = 5;
-var simplex_offset = 0.25;
+var falloff = (1 << 5);
+var simplex_offset;
 function seedWorld(rng) {
     perlin.seed(rng());
     simplex_offset = simplex_offset_base + (rng() * 2 - 1) * simplex_offset_variance;
@@ -879,6 +885,8 @@ function seedWorld(rng) {
 exports.seedWorld = seedWorld;
 var SimplexWorld = (function () {
     function SimplexWorld() {
+        SimplexWorld.min_x = 0;
+        SimplexWorld.max_x = 0;
         this.lines = marchingsquares_1.marching_squares_aligned(SimplexWorld.sample_noise, worldWidth, worldHeight, 0, 0, gridSize);
         var min = 0;
         var max = 0;
@@ -887,14 +895,18 @@ var SimplexWorld = (function () {
             min = Math.min(min, start.x);
             max = Math.max(max, start.x);
         }
+        console.log("worldWidth: " + worldWidth);
+        console.log("sample min: " + SimplexWorld.min_x);
+        console.log("sample max: " + SimplexWorld.max_x);
         console.log("Test min: " + min);
         console.log("Test max: " + max);
     }
     SimplexWorld.sample_noise = function (x, y) {
-        var boundary_size = falloff_grids * gridSize;
-        var pad_y = Math.max(Math.abs(y) - (worldHeight - boundary_size), 0) / boundary_size;
-        var pad_x = Math.max(Math.abs(x) - (worldWidth - boundary_size), 0) / boundary_size;
-        var pad = Math.max(pad_x * pad_x, pad_y * pad_y) * 2;
+        SimplexWorld.min_x = Math.min(x, SimplexWorld.min_x);
+        SimplexWorld.max_x = Math.max(x, SimplexWorld.max_x);
+        var pad_y = Math.max(Math.abs(y) - (worldHeight - falloff), 0) / falloff;
+        var pad_x = Math.max(Math.abs(x) - (worldWidth - falloff), 0) / falloff;
+        var pad = Math.max(pad_x * pad_x, pad_y * pad_y) * (1 + simplex_offset);
         return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - pad;
     };
     SimplexWorld.choose_start = function (rng) {

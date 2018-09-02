@@ -4,13 +4,13 @@ import { Camera } from "./camera"
 import { marching_squares, marching_squares_aligned } from "./marchingsquares";
 
 const worldWidth = (1 << 8)
-const worldHeight = (1 << 6)
-const gridSize = 4
-const simplex_scale = 32;
-const simplex_offset_base = 0.25;
+const worldHeight = (1 << 7)
+const gridSize = 8
+const simplex_scale = 48;
+const simplex_offset_base = 0.5;
 const simplex_offset_variance = 0.25;
-const falloff_grids = 5
-let simplex_offset = 0.25;
+const falloff = (1 << 5);
+let simplex_offset: number;
 
 export function seedWorld(rng: () => number) {
     perlin.seed(rng())
@@ -22,22 +22,14 @@ export class SimplexWorld {
 
     constructor() {
         this.lines = marching_squares_aligned(SimplexWorld.sample_noise, worldWidth, worldHeight, 0, 0, gridSize)
-        let min = 0;
-        let max = 0;
-        for (let [start, end] of this.lines)
-        {
-            min = Math.min(min, start.x);
-            max = Math.max(max, start.x);
-        }
-        console.log("Test min: " + min)
-        console.log("Test max: " + max)
     }
 
     static sample_noise(x: number, y: number) {
-        let boundary_size = falloff_grids * gridSize;
-        let pad_y = Math.max(Math.abs(y) - (worldHeight - boundary_size), 0) / boundary_size;
-        let pad_x = Math.max(Math.abs(x) - (worldWidth - boundary_size), 0) / boundary_size;
-        let pad = Math.max(pad_x * pad_x, pad_y * pad_y) * 2;
+        SimplexWorld.min_x = Math.min(x, SimplexWorld.min_x);
+        SimplexWorld.max_x = Math.max(x, SimplexWorld.max_x);
+        let pad_y = Math.max(Math.abs(y) - (worldHeight - falloff), 0) / falloff;
+        let pad_x = Math.max(Math.abs(x) - (worldWidth - falloff), 0) / falloff;
+        let pad = Math.max(pad_x * pad_x, pad_y * pad_y) * (1 + simplex_offset);
         return perlin.simplex2(x / simplex_scale, y / simplex_scale) + simplex_offset - pad;
     }
 

@@ -28,14 +28,19 @@ export function marching_squares(func: (x: number, y: number) => number, width: 
         }
     }
     let arr = new Array<[Point, Point]>();
-    for (let y = 0; y < height - 1; y++) {
-        for (let x = 0; x < width - 1; x++) {
-            if (do_line(func, x + 1, y, 0, 1)) {
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            if (x != width - 1 && do_line(func, x + 1, y, 0, 1)) {
                 arr.push([points[y * width + x], points[y * width + x + 1]]);
             }
-            if (do_line(func, x, y + 1, 1, 0)) {
+            if (y != height - 1 && do_line(func, x, y + 1, 1, 0)) {
                 arr.push([points[y * width + x], points[(y + 1) * width + x]]);
             }
+        }
+    }
+    for (var [a, b] of arr) {
+        if (a.x === undefined || a.y === undefined || b.x === undefined || b.y === undefined) {
+            throw new Error("Undefined line");
         }
     }
     return arr;
