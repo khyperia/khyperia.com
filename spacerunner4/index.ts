@@ -228,7 +228,7 @@ class ShipRecord {
         }
     }
 
-    draw(camera: Camera, time: number) {
+    draw(camera: Camera) {
         camera.line(this.history, "#a0a0a0")
     }
 }
@@ -287,23 +287,9 @@ class Universe {
     }
 
     updateScene(deltaSeconds: number) {
-        this.current_time += deltaSeconds;
-        if (this.reset == 0) {
-            this.cur_record.update(this.ship, deltaSeconds)
-            if (this.ship.updateMe(this.pressedKeys, deltaSeconds)) {
-                this.reset += deltaSeconds;
-            }
-        }
-        this.camera_track.track(this.ship.pos, this.ship.vel, deltaSeconds)
-        if (this.target.update(this.ship)) {
-            if (this.reset == 0) {
-                this.high_score.onFinish(this.current_time);
-                this.reset += deltaSeconds;
-            }
-        }
-
         if (this.reset > 0) {
             this.reset += deltaSeconds;
+            this.target.update(this.ship); // shouldn't use ship
             if (this.reset > max_reset) {
                 this.reset = -max_reset + 0.0001
                 this.doReset()
@@ -313,7 +299,17 @@ class Universe {
             if (this.reset >= 0) {
                 this.reset = 0;
             }
+        } else {
+            this.current_time += deltaSeconds;
+            this.cur_record.update(this.ship, deltaSeconds);
+            if (this.ship.updateMe(this.pressedKeys, deltaSeconds)) {
+                this.reset += deltaSeconds;
+            } else if (this.target.update(this.ship)) {
+                this.high_score.onFinish(this.current_time);
+                this.reset += deltaSeconds;
+            }
         }
+        this.camera_track.track(this.ship.pos, this.ship.vel, deltaSeconds)
     }
 
     doReset() {
@@ -338,7 +334,7 @@ class Universe {
         this.simplex_world.draw(camera, this.ship.pos)
         if (this.draw_records) {
             for (let record of this.records) {
-                record.draw(camera, this.current_time)
+                record.draw(camera)
             }
         }
         this.ship.draw(camera)

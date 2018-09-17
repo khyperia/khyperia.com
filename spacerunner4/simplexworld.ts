@@ -25,8 +25,6 @@ export class SimplexWorld {
     }
 
     static sample_noise(x: number, y: number) {
-        SimplexWorld.min_x = Math.min(x, SimplexWorld.min_x);
-        SimplexWorld.max_x = Math.max(x, SimplexWorld.max_x);
         let pad_y = Math.max(Math.abs(y) - (worldHeight - falloff), 0) / falloff;
         let pad_x = Math.max(Math.abs(x) - (worldWidth - falloff), 0) / falloff;
         let pad = Math.max(pad_x * pad_x, pad_y * pad_y) * (1 + simplex_offset);

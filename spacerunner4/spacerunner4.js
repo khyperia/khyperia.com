@@ -305,7 +305,7 @@ var ShipRecord = (function () {
             this.history.push(ship.pos);
         }
     };
-    ShipRecord.prototype.draw = function (camera, time) {
+    ShipRecord.prototype.draw = function (camera) {
         camera.line(this.history, "#a0a0a0");
     };
     return ShipRecord;
@@ -345,22 +345,9 @@ var Universe = (function () {
         this.draw_records = true;
     }
     Universe.prototype.updateScene = function (deltaSeconds) {
-        this.current_time += deltaSeconds;
-        if (this.reset == 0) {
-            this.cur_record.update(this.ship, deltaSeconds);
-            if (this.ship.updateMe(this.pressedKeys, deltaSeconds)) {
-                this.reset += deltaSeconds;
-            }
-        }
-        this.camera_track.track(this.ship.pos, this.ship.vel, deltaSeconds);
-        if (this.target.update(this.ship)) {
-            if (this.reset == 0) {
-                this.high_score.onFinish(this.current_time);
-                this.reset += deltaSeconds;
-            }
-        }
         if (this.reset > 0) {
             this.reset += deltaSeconds;
+            this.target.update(this.ship);
             if (this.reset > max_reset) {
                 this.reset = -max_reset + 0.0001;
                 this.doReset();
@@ -372,6 +359,18 @@ var Universe = (function () {
                 this.reset = 0;
             }
         }
+        else {
+            this.current_time += deltaSeconds;
+            this.cur_record.update(this.ship, deltaSeconds);
+            if (this.ship.updateMe(this.pressedKeys, deltaSeconds)) {
+                this.reset += deltaSeconds;
+            }
+            else if (this.target.update(this.ship)) {
+                this.high_score.onFinish(this.current_time);
+                this.reset += deltaSeconds;
+            }
+        }
+        this.camera_track.track(this.ship.pos, this.ship.vel, deltaSeconds);
     };
     Universe.prototype.doReset = function () {
         this.ship.respawn();
@@ -395,7 +394,7 @@ var Universe = (function () {
         if (this.draw_records) {
             for (var _i = 0, _a = this.records; _i < _a.length; _i++) {
                 var record = _a[_i];
-                record.draw(camera, this.current_time);
+                record.draw(camera);
             }
         }
         this.ship.draw(camera);
@@ -885,25 +884,9 @@ function seedWorld(rng) {
 exports.seedWorld = seedWorld;
 var SimplexWorld = (function () {
     function SimplexWorld() {
-        SimplexWorld.min_x = 0;
-        SimplexWorld.max_x = 0;
         this.lines = marchingsquares_1.marching_squares_aligned(SimplexWorld.sample_noise, worldWidth, worldHeight, 0, 0, gridSize);
-        var min = 0;
-        var max = 0;
-        for (var _i = 0, _a = this.lines; _i < _a.length; _i++) {
-            var _b = _a[_i], start = _b[0], end = _b[1];
-            min = Math.min(min, start.x);
-            max = Math.max(max, start.x);
-        }
-        console.log("worldWidth: " + worldWidth);
-        console.log("sample min: " + SimplexWorld.min_x);
-        console.log("sample max: " + SimplexWorld.max_x);
-        console.log("Test min: " + min);
-        console.log("Test max: " + max);
     }
     SimplexWorld.sample_noise = function (x, y) {
-        SimplexWorld.min_x = Math.min(x, SimplexWorld.min_x);
-        SimplexWorld.max_x = Math.max(x, SimplexWorld.max_x);
         var pad_y = Math.max(Math.abs(y) - (worldHeight - falloff), 0) / falloff;
         var pad_x = Math.max(Math.abs(x) - (worldWidth - falloff), 0) / falloff;
         var pad = Math.max(pad_x * pad_x, pad_y * pad_y) * (1 + simplex_offset);
