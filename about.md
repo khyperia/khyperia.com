@@ -6,6 +6,7 @@ You can find me lots of places. Chances are, if you find a wild khyperia somewhe
 
 * Twitter: [@khyperia](https://twitter.com/khyperia)
 * Github: [khyperia](https://github.com/khyperia)
+* Mastodon: [@khyperia@cybre.space](https://cybre.space/@khyperia)
 * IRC: I hop around, but I'm khyperia everywhere.
 * Email: khyperia&#128293;live.com
 

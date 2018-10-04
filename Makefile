@@ -17,7 +17,7 @@ all: $(built_files)
 
 install: all | $(dest_folder)
 	@echo Invoking sudo to copy files...
-	sudo rsync --verbose --links --times --relative $(built_files) $(dest_folder)
+	sudo rsync --verbose --copy-links --times --relative --recursive $(built_files) $(dest_folder)
 
 diff:
 	comm -3 <(cd $(dest_folder); find . -not -type d | sort) <(printf '%s\n' $(built_files) | sort)

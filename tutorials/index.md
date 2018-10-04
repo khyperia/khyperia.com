@@ -9,6 +9,7 @@ Also, random tutorial stuff is smashed in here too!
 * [Copying files to/from Guardian/Colossus](scp.html)
 * [Installing Ubersystem locally](uber.html)
 * [Renaming the author in git commits](rename_commits.html)
+* [Telescope "tiers"](telescopes.html)
 
 ---
 

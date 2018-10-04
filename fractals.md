@@ -4,6 +4,10 @@ These were rendered by various versions of my fractal raytracing program. [More 
 
 ---
 
+[![](/image/gold.png)](fractals/gold.png)
+
+---
+
 [![](/image/electric.png)](fractals/electric.png)
 
 ---
