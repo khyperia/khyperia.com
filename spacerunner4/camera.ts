@@ -77,15 +77,20 @@ export class Camera {
     }
 
     draw_segments(poly: Array<[Point, Point]>, color: string) {
+        let offset = this.transform(new Point(0, 0));
+        let scale = Point.sub(this.transform(new Point(1, 0)), offset).x;
+        let oldLineWidth = ctx.lineWidth;
+        ctx.lineWidth = 1 / scale;
+        ctx.setTransform(scale, 0, 0, scale, offset.x, offset.y);
         ctx.strokeStyle = color
         ctx.beginPath();
         for (let [start_world, end_world] of poly) {
-            let start = this.transform(start_world)
-            let end = this.transform(end_world)
-            ctx.moveTo(start.x, start.y);
-            ctx.lineTo(end.x, end.y);
+            ctx.moveTo(start_world.x, start_world.y);
+            ctx.lineTo(end_world.x, end_world.y);
         }
         ctx.stroke()
+        ctx.resetTransform();
+        ctx.lineWidth = oldLineWidth;
     }
 
     circle(center: Point, radius: number, color: string) {

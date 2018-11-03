@@ -3,25 +3,23 @@ import * as perlin from "./perlin"
 import { Camera } from "./camera"
 import { marching_squares, marching_squares_aligned } from "./marchingsquares";
 
-const worldWidth = (1 << 8)
+const worldWidth = (1 << 9)
 const worldHeight = (1 << 7)
 const gridSize = 8
 const simplex_scale = 48;
-const simplex_offset_base = 0.5;
-const simplex_offset_variance = 0.25;
 const falloff = (1 << 5);
-let simplex_offset: number;
-
-export function seedWorld(rng: () => number) {
-    perlin.seed(rng())
-    simplex_offset = simplex_offset_base + (rng() * 2 - 1) * simplex_offset_variance
-}
+const simplex_offset = 0.3;
 
 export class SimplexWorld {
     lines: Array<[Point, Point]>
+    spawn_point: Point;
+    target_point: Point;
 
-    constructor() {
+    constructor(rng: () => number) {
+        perlin.seed(rng())
         this.lines = marching_squares_aligned(SimplexWorld.sample_noise, worldWidth, worldHeight, 0, 0, gridSize)
+        this.spawn_point = SimplexWorld.choose_start(rng);
+        this.target_point = SimplexWorld.choose_end(rng);
     }
 
     static sample_noise(x: number, y: number) {

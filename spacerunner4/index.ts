@@ -1,6 +1,6 @@
 import { Point } from "./point"
 import { Camera, CameraTrack } from "./camera"
-import { SimplexWorld, seedWorld } from "./simplexworld"
+import { SimplexWorld } from "./simplexworld"
 import { rngFromString } from "./rand";
 
 const ship_size = 2
@@ -14,7 +14,6 @@ const max_reset = 0.75
 const shipColors = [
     "DarkRed",
     "DarkOrange",
-    "Gold",
     "Green",
     "Blue",
     "Purple",
@@ -22,19 +21,15 @@ const shipColors = [
 
 class Settings {
     ship_color: string;
-    spawn_point: Point;
-    target_point: Point;
+    rng: () => number;
 
     constructor() {
         if (!location.hash) {
             location.hash = "" + ((Math.random() * 10000) | 0)
         }
         const random = rngFromString(location.hash);
-        const rng = random.nextFloat.bind(random);
-        seedWorld(rng)
-        this.ship_color = shipColors[Math.floor(rng() * shipColors.length)]
-        this.spawn_point = SimplexWorld.choose_start(rng);
-        this.target_point = SimplexWorld.choose_end(rng);
+        this.rng = random.nextFloat.bind(random);
+        this.ship_color = shipColors[Math.floor(this.rng() * shipColors.length)]
     }
 }
 
@@ -72,7 +67,6 @@ class Ship {
     throttle: boolean
     rotating: number
     color: string
-    world: SimplexWorld
     settings: Settings
 
     constructor(settings: Settings, world: SimplexWorld) {
@@ -83,10 +77,9 @@ class Ship {
         this.throttle = false
         this.rotating = 0
         this.color = settings.ship_color
-        this.world = world
         this.settings = settings
 
-        this.respawn()
+        this.respawn(world)
     }
 
     points() {
@@ -113,17 +106,17 @@ class Ship {
         }
     }
 
-    test(): boolean {
+    test(world: SimplexWorld): boolean {
         for (let point of this.points()) {
-            if (this.world.test(point)) {
+            if (world.test(point)) {
                 return true;
             }
         }
         return false;
     }
 
-    respawn() {
-        this.pos = this.settings.spawn_point;
+    respawn(world: SimplexWorld) {
+        this.pos = world.spawn_point;
         this.rot = 0;
         this.rotVel = 0
         this.vel = new Point(0, 0)
@@ -131,7 +124,7 @@ class Ship {
         this.rotating = 0;
     }
 
-    update(deltaSeconds: number): boolean {
+    update(world: SimplexWorld, deltaSeconds: number): boolean {
         let my_speed_damp = 1 - speed_damp * deltaSeconds
         let my_rot_damp = 1 - rot_damp * deltaSeconds
         let my_thrust = thrust * deltaSeconds
@@ -150,14 +143,14 @@ class Ship {
         this.pos = Point.add(this.pos, Point.mul(this.vel, deltaSeconds))
         this.rot += this.rotVel * deltaSeconds
 
-        if (this.test()) {
+        if (this.test(world)) {
             return true
         } else {
             return false
         }
     }
 
-    updateMe(pressedKeys: Array<number>, deltaSeconds: number): boolean {
+    updateMe(pressedKeys: Array<number>, world: SimplexWorld, deltaSeconds: number): boolean {
         if (has(pressedKeys, 37) || has(pressedKeys, 65)) { // left | a
             this.rotating = -1
         } else if (has(pressedKeys, 39) || has(pressedKeys, 68)) { // right | d
@@ -172,7 +165,7 @@ class Ship {
         }
         if (has(pressedKeys, 40) || has(pressedKeys, 83)) { // down | s
         }
-        return this.update(deltaSeconds)
+        return this.update(world, deltaSeconds)
     }
 }
 
@@ -181,8 +174,8 @@ class Target {
     win: number
     static targetRadius = 10
 
-    constructor(settings: Settings) {
-        this.pos = settings.target_point
+    constructor(world: SimplexWorld) {
+        this.pos = world.target_point
         this.win = 0
     }
 
@@ -257,6 +250,7 @@ class HighScore {
 }
 
 class Universe {
+    settings: Settings
     ship: Ship
     camera_track: CameraTrack
     target: Target
@@ -271,11 +265,11 @@ class Universe {
     draw_records: boolean
 
     constructor() {
-        let settings = new Settings();
-        this.simplex_world = new SimplexWorld()
-        this.ship = new Ship(settings, this.simplex_world)
-        this.camera_track = new CameraTrack(this.ship.pos)
-        this.target = new Target(settings)
+        this.settings = new Settings();
+        this.simplex_world = new SimplexWorld(this.settings.rng);
+        this.ship = new Ship(this.settings, this.simplex_world);
+        this.camera_track = new CameraTrack(this.ship.pos);
+        this.target = new Target(this.simplex_world);
         this.pressedKeys = new Array<number>();
         this.previousMillis = 0;
         this.reset = 0;
@@ -302,7 +296,7 @@ class Universe {
         } else {
             this.current_time += deltaSeconds;
             this.cur_record.update(this.ship, deltaSeconds);
-            if (this.ship.updateMe(this.pressedKeys, deltaSeconds)) {
+            if (this.ship.updateMe(this.pressedKeys, this.simplex_world, deltaSeconds)) {
                 this.reset += deltaSeconds;
             } else if (this.target.update(this.ship)) {
                 this.high_score.onFinish(this.current_time);
@@ -312,12 +306,23 @@ class Universe {
         this.camera_track.track(this.ship.pos, this.ship.vel, deltaSeconds)
     }
 
+    doFullRespawn(): boolean {
+        // StartsWith('0')
+        return location.hash.substr(0, 2) == '#0'
+    }
+
     doReset() {
-        this.ship.respawn();
-        this.camera_track.point = this.ship.pos
         if (this.target.win != 0) {
             this.records.push(this.cur_record);
         }
+        if (this.doFullRespawn()) {
+            this.simplex_world = new SimplexWorld(this.settings.rng);
+            this.target.pos = this.simplex_world.target_point;
+            this.records = [];
+            this.high_score = new HighScore();
+        }
+        this.ship.respawn(this.simplex_world);
+        this.camera_track.point = this.ship.pos
         this.cur_record = new ShipRecord();
         while (this.records.length > 100) {
             this.records.splice(0, 1)

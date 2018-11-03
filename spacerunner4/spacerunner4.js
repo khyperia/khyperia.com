@@ -65,16 +65,21 @@ var Camera = (function () {
         }
     };
     Camera.prototype.draw_segments = function (poly, color) {
+        var offset = this.transform(new point_1.Point(0, 0));
+        var scale = point_1.Point.sub(this.transform(new point_1.Point(1, 0)), offset).x;
+        var oldLineWidth = ctx.lineWidth;
+        ctx.lineWidth = 1 / scale;
+        ctx.setTransform(scale, 0, 0, scale, offset.x, offset.y);
         ctx.strokeStyle = color;
         ctx.beginPath();
         for (var _i = 0, poly_1 = poly; _i < poly_1.length; _i++) {
             var _a = poly_1[_i], start_world = _a[0], end_world = _a[1];
-            var start = this.transform(start_world);
-            var end = this.transform(end_world);
-            ctx.moveTo(start.x, start.y);
-            ctx.lineTo(end.x, end.y);
+            ctx.moveTo(start_world.x, start_world.y);
+            ctx.lineTo(end_world.x, end_world.y);
         }
         ctx.stroke();
+        ctx.resetTransform();
+        ctx.lineWidth = oldLineWidth;
     };
     Camera.prototype.circle = function (center, radius, color) {
         ctx.strokeStyle = color;
@@ -121,7 +126,6 @@ var max_reset = 0.75;
 var shipColors = [
     "DarkRed",
     "DarkOrange",
-    "Gold",
     "Green",
     "Blue",
     "Purple",
@@ -132,11 +136,8 @@ var Settings = (function () {
             location.hash = "" + ((Math.random() * 10000) | 0);
         }
         var random = rand_1.rngFromString(location.hash);
-        var rng = random.nextFloat.bind(random);
-        simplexworld_1.seedWorld(rng);
-        this.ship_color = shipColors[Math.floor(rng() * shipColors.length)];
-        this.spawn_point = simplexworld_1.SimplexWorld.choose_start(rng);
-        this.target_point = simplexworld_1.SimplexWorld.choose_end(rng);
+        this.rng = random.nextFloat.bind(random);
+        this.ship_color = shipColors[Math.floor(this.rng() * shipColors.length)];
     }
     return Settings;
 }());
@@ -174,9 +175,8 @@ var Ship = (function () {
         this.throttle = false;
         this.rotating = 0;
         this.color = settings.ship_color;
-        this.world = world;
         this.settings = settings;
-        this.respawn();
+        this.respawn(world);
     }
     Ship.prototype.points = function () {
         return ship_points(this.pos, this.rot);
@@ -199,24 +199,24 @@ var Ship = (function () {
             camera.draw(this.thrustPoints(), "red");
         }
     };
-    Ship.prototype.test = function () {
+    Ship.prototype.test = function (world) {
         for (var _i = 0, _a = this.points(); _i < _a.length; _i++) {
             var point = _a[_i];
-            if (this.world.test(point)) {
+            if (world.test(point)) {
                 return true;
             }
         }
         return false;
     };
-    Ship.prototype.respawn = function () {
-        this.pos = this.settings.spawn_point;
+    Ship.prototype.respawn = function (world) {
+        this.pos = world.spawn_point;
         this.rot = 0;
         this.rotVel = 0;
         this.vel = new point_1.Point(0, 0);
         this.throttle = false;
         this.rotating = 0;
     };
-    Ship.prototype.update = function (deltaSeconds) {
+    Ship.prototype.update = function (world, deltaSeconds) {
         var my_speed_damp = 1 - speed_damp * deltaSeconds;
         var my_rot_damp = 1 - rot_damp * deltaSeconds;
         var my_thrust = thrust * deltaSeconds;
@@ -234,14 +234,14 @@ var Ship = (function () {
         this.rotVel *= my_rot_damp;
         this.pos = point_1.Point.add(this.pos, point_1.Point.mul(this.vel, deltaSeconds));
         this.rot += this.rotVel * deltaSeconds;
-        if (this.test()) {
+        if (this.test(world)) {
             return true;
         }
         else {
             return false;
         }
     };
-    Ship.prototype.updateMe = function (pressedKeys, deltaSeconds) {
+    Ship.prototype.updateMe = function (pressedKeys, world, deltaSeconds) {
         if (has(pressedKeys, 37) || has(pressedKeys, 65)) {
             this.rotating = -1;
         }
@@ -259,13 +259,13 @@ var Ship = (function () {
         }
         if (has(pressedKeys, 40) || has(pressedKeys, 83)) {
         }
-        return this.update(deltaSeconds);
+        return this.update(world, deltaSeconds);
     };
     return Ship;
 }());
 var Target = (function () {
-    function Target(settings) {
-        this.pos = settings.target_point;
+    function Target(world) {
+        this.pos = world.target_point;
         this.win = 0;
     }
     Target.prototype.draw = function (camera) {
@@ -330,11 +330,11 @@ var HighScore = (function () {
 }());
 var Universe = (function () {
     function Universe() {
-        var settings = new Settings();
-        this.simplex_world = new simplexworld_1.SimplexWorld();
-        this.ship = new Ship(settings, this.simplex_world);
+        this.settings = new Settings();
+        this.simplex_world = new simplexworld_1.SimplexWorld(this.settings.rng);
+        this.ship = new Ship(this.settings, this.simplex_world);
         this.camera_track = new camera_1.CameraTrack(this.ship.pos);
-        this.target = new Target(settings);
+        this.target = new Target(this.simplex_world);
         this.pressedKeys = new Array();
         this.previousMillis = 0;
         this.reset = 0;
@@ -362,7 +362,7 @@ var Universe = (function () {
         else {
             this.current_time += deltaSeconds;
             this.cur_record.update(this.ship, deltaSeconds);
-            if (this.ship.updateMe(this.pressedKeys, deltaSeconds)) {
+            if (this.ship.updateMe(this.pressedKeys, this.simplex_world, deltaSeconds)) {
                 this.reset += deltaSeconds;
             }
             else if (this.target.update(this.ship)) {
@@ -372,12 +372,21 @@ var Universe = (function () {
         }
         this.camera_track.track(this.ship.pos, this.ship.vel, deltaSeconds);
     };
+    Universe.prototype.doFullRespawn = function () {
+        return location.hash.substr(0, 2) == '#0';
+    };
     Universe.prototype.doReset = function () {
-        this.ship.respawn();
-        this.camera_track.point = this.ship.pos;
         if (this.target.win != 0) {
             this.records.push(this.cur_record);
         }
+        if (this.doFullRespawn()) {
+            this.simplex_world = new simplexworld_1.SimplexWorld(this.settings.rng);
+            this.target.pos = this.simplex_world.target_point;
+            this.records = [];
+            this.high_score = new HighScore();
+        }
+        this.ship.respawn(this.simplex_world);
+        this.camera_track.point = this.ship.pos;
         this.cur_record = new ShipRecord();
         while (this.records.length > 100) {
             this.records.splice(0, 1);
@@ -869,22 +878,18 @@ exports.__esModule = true;
 var point_1 = require("./point");
 var perlin = require("./perlin");
 var marchingsquares_1 = require("./marchingsquares");
-var worldWidth = (1 << 8);
+var worldWidth = (1 << 9);
 var worldHeight = (1 << 7);
 var gridSize = 8;
 var simplex_scale = 48;
-var simplex_offset_base = 0.5;
-var simplex_offset_variance = 0.25;
 var falloff = (1 << 5);
-var simplex_offset;
-function seedWorld(rng) {
-    perlin.seed(rng());
-    simplex_offset = simplex_offset_base + (rng() * 2 - 1) * simplex_offset_variance;
-}
-exports.seedWorld = seedWorld;
+var simplex_offset = 0.3;
 var SimplexWorld = (function () {
-    function SimplexWorld() {
+    function SimplexWorld(rng) {
+        perlin.seed(rng());
         this.lines = marchingsquares_1.marching_squares_aligned(SimplexWorld.sample_noise, worldWidth, worldHeight, 0, 0, gridSize);
+        this.spawn_point = SimplexWorld.choose_start(rng);
+        this.target_point = SimplexWorld.choose_end(rng);
     }
     SimplexWorld.sample_noise = function (x, y) {
         var pad_y = Math.max(Math.abs(y) - (worldHeight - falloff), 0) / falloff;
