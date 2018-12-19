@@ -1,16 +1,12 @@
 /* https://gist.github.com/killercup/5917178 */
 
 html {
-    font-size: 100%;
     overflow-y: scroll;
-    -webkit-text-size-adjust: 100%;
-    -ms-text-size-adjust: 100%;
 }
 
 body {
     color: #444;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 12px;
     line-height: 1.7;
     padding: 1em;
     margin: auto;
@@ -42,26 +38,6 @@ a:focus {
     outline: thin dotted;
 }
 
-*::-moz-selection {
-    background: rgba(255, 255, 0, 0.3);
-    color: #000;
-}
-
-*::selection {
-    background: rgba(255, 255, 0, 0.3);
-    color: #000;
-}
-
-a::-moz-selection {
-    background: rgba(255, 255, 0, 0.3);
-    color: #0645ad;
-}
-
-a::selection {
-    background: rgba(255, 255, 0, 0.3);
-    color: #0645ad;
-}
-
 p {
     margin: 1em 0;
 }
@@ -79,30 +55,6 @@ h1, h2, h3, h4, h5, h6 {
 
 h4, h5, h6 {
     font-weight: bold;
-}
-
-h1 {
-    font-size: 2.5em;
-}
-
-h2 {
-    font-size: 2em;
-}
-
-h3 {
-    font-size: 1.5em;
-}
-
-h4 {
-    font-size: 1.2em;
-}
-
-h5 {
-    font-size: 1em;
-}
-
-h6 {
-    font-size: 0.9em;
 }
 
 blockquote {
@@ -124,7 +76,6 @@ pre, code, kbd, samp {
     background-color: #eee;
     color: #000;
     font-family: monospace;
-    font-size: 0.98em;
 }
 
 pre {
@@ -158,7 +109,6 @@ mark {
 }
 
 sub, sup {
-    font-size: 75%;
     line-height: 0;
     position: relative;
     vertical-align: baseline;
@@ -204,7 +154,6 @@ dd:last-child {
 
 img {
     border: 0;
-    -ms-interpolation-mode: bicubic;
     vertical-align: middle;
 }
 
@@ -220,7 +169,6 @@ figure img {
 }
 
 figcaption {
-    font-size: 0.8em;
     font-style: italic;
     margin: 0 0 .8em;
 }
@@ -248,83 +196,6 @@ table td {
 }
 
 .author {
-    font-size: 1.2em;
     text-align: center;
 }
 
-@media only screen and (min-width: 480px) {
-    body {
-        font-size: 14px;
-    }
-}
-@media only screen and (min-width: 768px) {
-    body {
-        font-size: 16px;
-    }
-}
-@media print {
-    * {
-        background: transparent !important;
-        color: black !important;
-        filter: none !important;
-        -ms-filter: none !important;
-    }
-
-    body {
-        font-size: 12pt;
-        max-width: 100%;
-    }
-
-    a, a:visited {
-        text-decoration: underline;
-    }
-
-    hr {
-        height: 1px;
-        border: 0;
-        border-bottom: 1px solid black;
-    }
-
-    a[href]:after {
-        content: " (" attr(href) ")";
-    }
-
-    abbr[title]:after {
-        content: " (" attr(title) ")";
-    }
-
-    .ir a:after, a[href^="javascript:"]:after, a[href^="#"]:after {
-        content: "";
-    }
-
-    pre, blockquote {
-        border: 1px solid #999;
-        padding-right: 1em;
-        page-break-inside: avoid;
-    }
-
-    tr, img {
-        page-break-inside: avoid;
-    }
-
-    img {
-        max-width: 100% !important;
-    }
-
-    @page :left {
-        margin: 15mm 20mm 15mm 10mm;
-    }
-
-    @page :right {
-        margin: 15mm 10mm 15mm 20mm;
-    }
-
-    p, h2, h3 {
-        orphans: 3;
-        widows: 3;
-    }
-
-    h2, h3 {
-        page-break-after: avoid;
-    }
-}

@@ -2,6 +2,16 @@ Yay, fractals! Hopefully your browser doesn't explode displaying this page.
 
 These were rendered by various versions of my fractal raytracing program. [More fractals are located here.](https://imgur.com/a/rmM4v)
 
+[![](/image/reactor.png)](fractals/reactor.png)
+
+---
+
+[![](/image/aqua.png)](fractals/aqua.png)
+
+---
+
+[![](/image/gold_blue.png)](fractals/gold_blue.png)
+
 ---
 
 [![](/image/gold.png)](fractals/gold.png)
@@ -9,6 +19,14 @@ These were rendered by various versions of my fractal raytracing program. [More 
 ---
 
 [![](/image/electric.png)](fractals/electric.png)
+
+---
+
+[![](/image/glare.png)](fractals/glare.png)
+
+---
+
+[![](/image/icecreamscoop.png)](fractals/icecreamscoop.png)
 
 ---
 
