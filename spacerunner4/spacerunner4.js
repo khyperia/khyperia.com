@@ -155,6 +155,17 @@ function sign(x) {
 function has(arr, v) {
     return arr.some(function (x) { return x == v; });
 }
+function arrow(position, target) {
+    var dir = point_1.Point.mul(point_1.Point.sub(target, position).normalized(), 100);
+    var normal = new point_1.Point(dir.y, -dir.x);
+    var points = [
+        dir,
+        point_1.Point.add(point_1.Point.mul(dir, 0.99), point_1.Point.mul(normal, 0.05)),
+        point_1.Point.add(point_1.Point.mul(dir, 0.99), point_1.Point.mul(normal, -0.05)),
+    ];
+    var screen_camera = new camera_1.Camera(new point_1.Point(0, 0), 1);
+    screen_camera.draw(points, "Red");
+}
 function ship_points(pos, rot) {
     var offsets = [
         new point_1.Point(Math.cos(rot + ship_shape_angle) * -ship_size, Math.sin(rot + ship_shape_angle) * -ship_size),
@@ -408,6 +419,7 @@ var Universe = (function () {
         }
         this.ship.draw(camera);
         this.target.draw(camera);
+        arrow(this.ship.pos, this.target.pos);
         this.high_score.draw(camera, this.current_time);
     };
     Universe.prototype.frame = function (currentMillis) {
@@ -808,6 +820,15 @@ var Point = (function () {
         this.x = x;
         this.y = y;
     }
+    Point.prototype.length2 = function () {
+        return this.x * this.x + this.y * this.y;
+    };
+    Point.prototype.length = function () {
+        return Math.sqrt(this.length2());
+    };
+    Point.prototype.normalized = function () {
+        return Point.mul(this, 1 / this.length());
+    };
     Point.add = function (left, right) {
         return new Point(left.x + right.x, left.y + right.y);
     };

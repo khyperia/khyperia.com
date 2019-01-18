@@ -7,6 +7,18 @@ export class Point {
         this.y = y
     }
 
+	length2() {
+		return this.x * this.x + this.y * this.y;
+	}
+
+	length() {
+		return Math.sqrt(this.length2())
+	}
+
+	normalized() {
+		return Point.mul(this, 1 / this.length())
+	}
+
     static add(left: Point, right: Point) {
         return new Point(left.x + right.x, left.y + right.y)
     }

@@ -47,6 +47,18 @@ function has<T>(arr: Array<T>, v: T): boolean {
     return arr.some(x => x == v)
 }
 
+function arrow(position: Point, target: Point) {
+	let dir = Point.mul(Point.sub(target, position).normalized(), 100);
+	let normal = new Point(dir.y, -dir.x);
+	let points = [
+		dir,
+		Point.add(Point.mul(dir, 0.99), Point.mul(normal, 0.05)),
+		Point.add(Point.mul(dir, 0.99), Point.mul(normal, -0.05)),
+	]
+	let screen_camera = new Camera(new Point(0, 0), 1);
+	screen_camera.draw(points, "Red")
+}
+
 function ship_points(pos: Point, rot: number): Array<Point> {
     let offsets = [
         new Point(Math.cos(rot + ship_shape_angle) * -ship_size, Math.sin(rot + ship_shape_angle) * -ship_size),
@@ -344,6 +356,7 @@ class Universe {
         }
         this.ship.draw(camera)
         this.target.draw(camera)
+		arrow(this.ship.pos, this.target.pos)
         this.high_score.draw(camera, this.current_time)
     }
 
