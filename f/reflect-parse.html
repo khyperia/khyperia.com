@@ -1,0 +1,204 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reflect.parse() visualizer</title>
+    <style>
+        /* Remove default bullets */
+        ul,
+        #myUL {
+            list-style-type: none;
+        }
+
+        /* Remove margins and padding from the parent ul */
+        #myUL {
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Style the caret/arrow */
+        .caret {
+            cursor: pointer;
+            user-select: none;
+            /* Prevent text selection */
+        }
+
+        /* Create the caret/arrow with a unicode, and style it */
+        .caret::before {
+            content: "\25B6";
+            color: black;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        /* Rotate the caret/arrow icon when clicked on (using JavaScript) */
+        .caret-down::before {
+            transform: rotate(90deg);
+        }
+
+        /* Hide the nested list */
+        .nested {
+            display: none;
+        }
+
+        /* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
+        .active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Code</h1>
+    <textarea id="code" cols="40" rows="5" onchange="update()">function f() { class C { x = 2 + "hi"; } }</textarea>
+    <h1>Reflect.parse output</h1>
+    <textarea id="json" cols="40" rows="5" onchange="update()">{loc:{start:{line:1, column:0}, end:{line:1, column:42}, source:null}, type:"Program", body:[{loc:{start:{line:1, column:9}, end:{line:1, column:42}, source:null}, type:"FunctionDeclaration", id:{loc:null, type:"Identifier", name:"f"}, params:[], defaults:[], body:{loc:{start:{line:1, column:13}, end:{line:1, column:42}, source:null}, type:"BlockStatement", body:[{loc:{start:{line:1, column:15}, end:{line:1, column:40}, source:null}, type:"ClassStatement", id:{loc:{start:{line:1, column:21}, end:{line:1, column:22}, source:null}, type:"Identifier", name:"C"}, superClass:null, body:[{loc:{start:{line:1, column:25}, end:{line:1, column:37}, source:null}, type:"ClassField", name:{loc:{start:{line:1, column:25}, end:{line:1, column:26}, source:null}, type:"Identifier", name:"x"}, initializer:{loc:{start:{line:1, column:29}, end:{line:1, column:37}, source:null}, type:"BinaryExpression", operator:"+", left:{loc:{start:{line:1, column:29}, end:{line:1, column:30}, source:null}, type:"Literal", value:2}, right:{loc:{start:{line:1, column:33}, end:{line:1, column:37}, source:null}, type:"Literal", value:"hi"}}}, {loc:{start:{line:1, column:39}, end:{line:1, column:40}, source:null}, type:"ClassMethod", name:{loc:{start:{line:1, column:39}, end:{line:1,column:40}, source:null}, type:"Identifier", name:"constructor"}, body:{loc:{start:{line:1, column:39}, end:{line:1, column:40}, source:null}, type:"FunctionExpression", id:{loc:null, type:"Identifier", name:"C"}, params:[], defaults:[], body:{loc:{start:{line:1, column:15}, end:{line:1, column:16}, source:null}, type:"BlockStatement", body:[]}, rest:null, generator:false, async:false, expression:false}, kind:"method", static:false}]}]}, rest:null, generator:false, async:false, expression:false}]}</textarea>
+    <div id="listview"></div>
+    <div id="sourceview"></div>
+    <script>
+        function clickHandler() {
+            this.parentElement.querySelector(".nested").classList.toggle("active");
+            this.classList.toggle("caret-down");
+        }
+
+        function updateFoldListeners() {
+            var toggler = document.getElementsByClassName("caret");
+            var i;
+
+            for (i = 0; i < toggler.length; i++) {
+                toggler[i].removeEventListener("click", clickHandler);
+                toggler[i].addEventListener("click", clickHandler);
+            }
+        }
+
+        function findArrayType(data) {
+            let name = "";
+            for (var item of data) {
+                if (typeof item.type == "undefined") {
+                    return "";
+                }
+                if (name == "") {
+                    name = item.type;
+                } else if (name != item.type) {
+                    return "";
+                }
+            }
+            return name;
+        }
+
+        function renderPrim(data, name) {
+            switch (typeof data) {
+                case "string":
+                    return `${name} = "${data}"`;
+                case "boolean":
+                case "number":
+                case "object":
+                    return `${name} = ${data}`;
+                default:
+                    return `${name}: ${typeof data} = ${data}`;
+            }
+        }
+
+        function renderLoc(data) {
+            let start = resolveLineCol(data.start.line, data.start.column);
+            let end = resolveLineCol(data.end.line, data.end.column);
+            console.log(`${start} ${end}`)
+            let button = `<u onclick="setHighlight(${start},${end})">position:</u>`
+            let thing = `${button} ${data.start.line}:${data.start.column} to ${data.end.line}:${data.end.column}`
+            return thing;
+        }
+
+        function resolveLineCol(line, col) {
+            let index = 0;
+            for (let i = 1; i < line; i++) {
+                index = codeOrig.indexOf('\n', index) + 1;
+            }
+            return index + col;
+        }
+
+        function renderHeader(data, name) {
+            let type = data.type;
+            if (data instanceof Array) {
+                return `${name}: [${findArrayType(data)}] length ${data.length}`;
+            } else if (typeof type == "undefined") {
+                return `${name}`;
+            } else {
+                return `${name}: ${type}`;
+            }
+        }
+
+        function renderObject(data) {
+            let src = "";
+            for (var key of Object.keys(data)) {
+                let value = data[key];
+                if (data instanceof Array) {
+                    key = `[${key}]`;
+                }
+                src += render(value, key);
+            }
+            return src;
+        }
+
+        function render(data, name) {
+            if (data == null || typeof data != "object") {
+                return `<li>${renderPrim(data, name)}</li>`;
+            }
+            if (name == "loc") {
+                return `<li>${renderLoc(data)}</li>`
+            }
+            let type = data.type;
+            let src = "<li>";
+            let header = renderHeader(data, name);
+            let obj = renderObject(data);
+            if (obj != "") {
+                let enclosedHeader = `<span class="caret">${header}</span>`;
+                src += enclosedHeader;
+                src += "<ul class=\"nested\">";
+                src += obj;
+                src += "</ul>";
+            } else {
+                src += header;
+            }
+            src += "</li>";
+            return src;
+        }
+
+        let codeOrig = "";
+
+        function update() {
+            codeOrig = document.getElementById("code").textContent.trim();
+            let dataStr = document.getElementById("json").textContent;
+            let data;
+            try {
+                data = JSON.parse(dataStr);
+            } catch (SyntaxError) {
+                data = eval('(' + dataStr + ')');
+            }
+            document.getElementById("sourceview").textContent = codeOrig;
+            let dataHtml = "<ul id=\"myUL\">" + render(data, "root") + "</ul>";
+            document.getElementById("listview").innerHTML = dataHtml;
+            updateFoldListeners();
+        }
+
+        function sanitizeHTML(str) {
+            var temp = document.createElement('div');
+            temp.textContent = str;
+            return temp.innerHTML;
+        };
+
+
+        function setHighlight(start, end) {
+            let output = [
+                sanitizeHTML(codeOrig.slice(0, start)),
+                '<u>',
+                sanitizeHTML(codeOrig.slice(start, end)),
+                '</u>',
+                sanitizeHTML(codeOrig.slice(end))].join('');
+            document.getElementById("sourceview").innerHTML = output;
+        }
+
+        update();
+    </script>
+</body>
+
+</html>

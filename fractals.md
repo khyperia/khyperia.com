@@ -2,6 +2,34 @@ Yay, fractals! Hopefully your browser doesn't explode displaying this page.
 
 These were rendered by various versions of my fractal raytracing program. [More fractals are located here.](https://imgur.com/a/rmM4v)
 
+[![](/image/freya.png)](fractals/freya.png)
+
+---
+
+[![](/image/fruit.png)](fractals/fruit.png)
+
+---
+
+[![](/image/fade.png)](fractals/fade.png)
+
+---
+
+[![](/image/spice.png)](fractals/spice.png)
+
+---
+
+[![](/image/crystals.png)](fractals/crystals.png)
+
+---
+
+[![](/image/observation.png)](fractals/observation.png)
+
+---
+
+[![](/image/pixels.png)](fractals/pixels.png)
+
+---
+
 [![](/image/reactor.png)](fractals/reactor.png)
 
 ---
