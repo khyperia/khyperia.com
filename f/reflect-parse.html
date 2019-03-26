@@ -50,9 +50,9 @@
 
 <body>
     <h1>Code</h1>
-    <textarea id="code" cols="40" rows="5" onchange="update()">function f() { class C { x = 2 + "hi"; } }</textarea>
+    <textarea id="code" cols="40" rows="5" oninput="update()">function f() { class C { x = 2 + "hi"; } }</textarea>
     <h1>Reflect.parse output</h1>
-    <textarea id="json" cols="40" rows="5" onchange="update()">{loc:{start:{line:1, column:0}, end:{line:1, column:42}, source:null}, type:"Program", body:[{loc:{start:{line:1, column:9}, end:{line:1, column:42}, source:null}, type:"FunctionDeclaration", id:{loc:null, type:"Identifier", name:"f"}, params:[], defaults:[], body:{loc:{start:{line:1, column:13}, end:{line:1, column:42}, source:null}, type:"BlockStatement", body:[{loc:{start:{line:1, column:15}, end:{line:1, column:40}, source:null}, type:"ClassStatement", id:{loc:{start:{line:1, column:21}, end:{line:1, column:22}, source:null}, type:"Identifier", name:"C"}, superClass:null, body:[{loc:{start:{line:1, column:25}, end:{line:1, column:37}, source:null}, type:"ClassField", name:{loc:{start:{line:1, column:25}, end:{line:1, column:26}, source:null}, type:"Identifier", name:"x"}, initializer:{loc:{start:{line:1, column:29}, end:{line:1, column:37}, source:null}, type:"BinaryExpression", operator:"+", left:{loc:{start:{line:1, column:29}, end:{line:1, column:30}, source:null}, type:"Literal", value:2}, right:{loc:{start:{line:1, column:33}, end:{line:1, column:37}, source:null}, type:"Literal", value:"hi"}}}, {loc:{start:{line:1, column:39}, end:{line:1, column:40}, source:null}, type:"ClassMethod", name:{loc:{start:{line:1, column:39}, end:{line:1,column:40}, source:null}, type:"Identifier", name:"constructor"}, body:{loc:{start:{line:1, column:39}, end:{line:1, column:40}, source:null}, type:"FunctionExpression", id:{loc:null, type:"Identifier", name:"C"}, params:[], defaults:[], body:{loc:{start:{line:1, column:15}, end:{line:1, column:16}, source:null}, type:"BlockStatement", body:[]}, rest:null, generator:false, async:false, expression:false}, kind:"method", static:false}]}]}, rest:null, generator:false, async:false, expression:false}]}</textarea>
+    <textarea id="json" cols="40" rows="5" oninput="update()">{loc:{start:{line:1, column:0}, end:{line:1, column:42}, source:null}, type:"Program", body:[{loc:{start:{line:1, column:9}, end:{line:1, column:42}, source:null}, type:"FunctionDeclaration", id:{loc:null, type:"Identifier", name:"f"}, params:[], defaults:[], body:{loc:{start:{line:1, column:13}, end:{line:1, column:42}, source:null}, type:"BlockStatement", body:[{loc:{start:{line:1, column:15}, end:{line:1, column:40}, source:null}, type:"ClassStatement", id:{loc:{start:{line:1, column:21}, end:{line:1, column:22}, source:null}, type:"Identifier", name:"C"}, superClass:null, body:[{loc:{start:{line:1, column:25}, end:{line:1, column:37}, source:null}, type:"ClassField", name:{loc:{start:{line:1, column:25}, end:{line:1, column:26}, source:null}, type:"Identifier", name:"x"}, initializer:{loc:{start:{line:1, column:29}, end:{line:1, column:37}, source:null}, type:"BinaryExpression", operator:"+", left:{loc:{start:{line:1, column:29}, end:{line:1, column:30}, source:null}, type:"Literal", value:2}, right:{loc:{start:{line:1, column:33}, end:{line:1, column:37}, source:null}, type:"Literal", value:"hi"}}}, {loc:{start:{line:1, column:39}, end:{line:1, column:40}, source:null}, type:"ClassMethod", name:{loc:{start:{line:1, column:39}, end:{line:1,column:40}, source:null}, type:"Identifier", name:"constructor"}, body:{loc:{start:{line:1, column:39}, end:{line:1, column:40}, source:null}, type:"FunctionExpression", id:{loc:null, type:"Identifier", name:"C"}, params:[], defaults:[], body:{loc:{start:{line:1, column:15}, end:{line:1, column:16}, source:null}, type:"BlockStatement", body:[]}, rest:null, generator:false, async:false, expression:false}, kind:"method", static:false}]}]}, rest:null, generator:false, async:false, expression:false}]}</textarea>
     <div id="listview"></div>
     <div id="sourceview"></div>
     <script>
@@ -102,7 +102,6 @@
         function renderLoc(data) {
             let start = resolveLineCol(data.start.line, data.start.column);
             let end = resolveLineCol(data.end.line, data.end.column);
-            console.log(`${start} ${end}`)
             let button = `<u onclick="setHighlight(${start},${end})">position:</u>`
             let thing = `${button} ${data.start.line}:${data.start.column} to ${data.end.line}:${data.end.column}`
             return thing;
@@ -166,8 +165,10 @@
         let codeOrig = "";
 
         function update() {
-            codeOrig = document.getElementById("code").textContent.trim();
-            let dataStr = document.getElementById("json").textContent;
+            let codeElement = document.getElementById("code");
+            let jsonElement = document.getElementById("json");
+            codeOrig = codeElement.value.trim();
+            let dataStr = jsonElement.value;
             let data;
             try {
                 data = JSON.parse(dataStr);
