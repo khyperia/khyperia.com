@@ -24,7 +24,10 @@ diff:
 
 #sed 's/!\[](\(.*\)\/\(.*\))/[![](\/image\/\2)](\1\/\2)/' -i $(shell find . -type f -name '*.md')
 
+fractals.md: fractals.py fractals/*
+	./fractals.py > fractals.md
+
 # Imagemagick uses /tmp when it runs out of memory... but /tmp is a ramdisk.
-convert:
+convert: fractals.md
 	MAGICK_TEMPORARY_PATH=$$HOME/tmp \
 	rg '^.*\[!\[\]\(/?(.*)\)\]\(/?(.*)\).*$$' --replace='if [ ! -e "$$1" ]; then; echo "$$2" && convert -cache 128 "$$2" -resize 750x-1 "$$1" || echo "failed!"; fi' -g '*.md' --no-filename | zsh -
