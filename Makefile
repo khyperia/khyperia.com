@@ -29,5 +29,4 @@ fractals.md: fractals.py fractals/*
 
 # Imagemagick uses /tmp when it runs out of memory... but /tmp is a ramdisk.
 convert: fractals.md
-	MAGICK_TEMPORARY_PATH=$$HOME/tmp \
-	rg '^.*\[!\[\]\(/?(.*)\)\]\(/?(.*)\).*$$' --replace='if [ ! -e "$$1" ]; then; echo "$$2" && convert -cache 128 "$$2" -resize 750x-1 "$$1" || echo "failed!"; fi' -g '*.md' --no-filename | zsh -
+	rg '^.*\[!\[\]\(/?(.*)\)\]\(/?(.*)\).*$$' --no-ignore-vcs --replace='if [ ! -e "$$1" ]; then; echo "$$2" && convert -cache 128 "$$2" -resize 750x-1 "$$1" || echo "failed!"; fi' -g '*.md' --no-filename | zsh -

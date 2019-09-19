@@ -7,7 +7,7 @@ print("")
 files = os.listdir("fractals")
 files.sort(reverse=True)
 for f in files:
-    print("[![](/image/" + f + "](fractals/" + f + ")")
+    print("[![](/image/" + f + ")](fractals/" + f + ")")
     print("")
     print("---")
     print("")
