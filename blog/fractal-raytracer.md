@@ -5,7 +5,7 @@ So, I've written a fractal raytracer. It's a decently complicated beast that
 I've been writing and re-writing over the past half-decade, so I figure it
 might be fun to write up on how it works!
 
-[![](/image/2017-08-18_10-05-15.canyon.png](fractals/2017-08-18_10-05-15.canyon.png)
+[![](/image/2017-08-18_10-05-15.canyon.png)](/fractals/2017-08-18_10-05-15.canyon.png)
 
 First off, there's two major parts to it.
 
@@ -14,7 +14,7 @@ First off, there's two major parts to it.
 
 We'll start with the CPU side (and we'll get to that asterisk later).
 
-[![](/image/2017-08-18_10-05-16.fire.png](fractals/2017-08-18_10-05-16.fire.png)
+[![](/image/2017-08-18_10-05-16.fire.png)](/fractals/2017-08-18_10-05-16.fire.png)
 
 I'll explain how my current rewrite of the raytracer works here. Note that there's many implementations of this that I've written over the years (the GPU side is generally extremely similar, and is copy-pasted between rewrites). I'll add a note at the end of some of the more interesting things other rewrites do.
 
@@ -24,7 +24,7 @@ The thing is designed around a simple primitive: a ["settings bag"](https://gith
 
 (Advanced note: The "start of key down" time is reset to "now" every time this integration is performed, so it's not a x^2 amount of forward movement. The cool thing about structuring it this way is that key down events mid-frame are handled correctly (giving e.g. half a frame movement forward), which is very useful when things are running at 5fps or less).
 
-[![](/image/2017-08-18_10-05-17.giants.png](fractals/2017-08-18_10-05-17.giants.png)
+[![](/image/2017-08-18_10-05-17.giants.png)](/fractals/2017-08-18_10-05-17.giants.png)
 
 The other two major sources of code size are pretty boring (but very complicated):
 
@@ -33,7 +33,7 @@ The other two major sources of code size are pretty boring (but very complicated
 
 \* On the asterisk near the beginning of the article: I *could* have had the result of the GPU's rendering (in OpenCL memory) be kept on the GPU, but ownership transferred to OpenGL as a texture, and rendered that texture as a fullscreen quad... but honestly, I tried that, and that weaves together the "GPU handler" component and the "display" component in an extremely complex way, so uh, I said screw that and just download the result buffer to throw the heap of pixels at SDL2. (SDL2 is way better at gamma than OpenGL, too - I had [quite the week or two](https://twitter.com/khyperia/status/978396006206205952) debugging OpenGL's gamma shenanigans)
 
-[![](/image/2017-08-18_10-05-19.lightfog.png](fractals/2017-08-18_10-05-19.lightfog.png)
+[![](/image/2017-08-18_10-05-19.lightfog.png)](/fractals/2017-08-18_10-05-19.lightfog.png)
 
 Now, for some other super cool stuff my other rewrites can do.
 
@@ -49,4 +49,4 @@ Now, for the GPU side, the actual raytracer!
 
 So long, and be blessed with many beautiful mathy structures!
 
-[![](/image/2018-04-11_08-42-47.shiny.png](fractals/2018-04-11_08-42-47.shiny.png)
+[![](/image/2018-04-11_08-42-47.shiny.png)](/fractals/2018-04-11_08-42-47.shiny.png)

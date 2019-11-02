@@ -10,7 +10,7 @@ I'll go in a low-to-high level order:
 * Photon simulation, i.e. calculating how actual light travels throughout the space. Uses raymarching.
 * Image generation, calculating what photons hit what pixels and how that generates a final image.
 
-[![](/image/2017-11-04_16-28-24.rail.png](fractals/2017-11-04_16-28-24.rail.png)
+[![](/image/2017-11-04_16-28-24.rail.png)](/fractals/2017-11-04_16-28-24.rail.png)
 
 ### Distance Estimator
 
@@ -26,7 +26,7 @@ Okay, let's boil down the above paragraph to something simple. Create a function
 
 Cool! That's all the scary fractal math there is.
 
-[![](/image/2017-08-18_10-05-16.flight.png](fractals/2017-08-18_10-05-16.flight.png)
+[![](/image/2017-08-18_10-05-16.flight.png)](/fractals/2017-08-18_10-05-16.flight.png)
 
 ### Raymarching
 
@@ -46,7 +46,7 @@ Let's make one: When the `radius` is really tiny, and the amount we're stepping 
 
 Yaay! We now know how to cast rays! Given a `start` and `direction`, we can figure out where that ray hits the object defined by the distance estimator.
 
-[![](/image/2017-08-18_10-05-15.bridge.png](fractals/2017-08-18_10-05-15.bridge.png)
+[![](/image/2017-08-18_10-05-15.bridge.png)](/fractals/2017-08-18_10-05-15.bridge.png)
 
 ### Photon simulation
 
@@ -58,7 +58,7 @@ The problem is to "solve the rendering equation" - figure out the total value of
 
 If we do that enough, and average all the result, it should slowly converge on the true solution. It won't be perfect (this is why raytraced images all look a little grainy, a little noisy), but if you do it long enough, it'll get pretty darn close.
 
-[![](/image/2017-08-18_10-05-16.energy.png](fractals/2017-08-18_10-05-16.energy.png)
+[![](/image/2017-08-18_10-05-16.energy.png)](/fractals/2017-08-18_10-05-16.energy.png)
 
 ### Image generation
 
@@ -74,11 +74,11 @@ So, for every pixel in our output image, let's choose a direction for the initia
 
 Here's an image of what a lambert projection looks like when the field of view is 720 degrees (breaking physics is fun!!) in diameter (360 degrees in radius - the center of the image is the same direction as the outer ring. The inner ring is looking straight backwards - 180 degrees)
 
-[![](/image/2017-08-18_10-05-19.iris.png](fractals/2017-08-18_10-05-19.iris.png)
+[![](/image/2017-08-18_10-05-19.iris.png)](/fractals/2017-08-18_10-05-19.iris.png)
 
 We can also do some really nifty effects like creating depth of field. Instead of starting the ray at the camera's exact position, start it slightly offset in a random direction. Then, correct the ray's direction slightly, so that all the offset rays intersect at some distance `d` away from the camera's origin. This distance `d` is the distance the focal plane is away from the camera, and the size of the random position jitter is the "amount" of depth-of-field blur we want. We can then re-use the fact that we're shooting and averaging thousands of rays already, and just choose a random offset for every ray we shoot. This produces physically accurately calculated depth of field, instead of faking it by trying to blur the resulting image! (And it looks *amazing* - I *love* depth of field)
 
-[![](/image/2017-08-18_10-05-20.platforms.png](fractals/2017-08-18_10-05-20.platforms.png)
+[![](/image/2017-08-18_10-05-20.platforms.png)](/fractals/2017-08-18_10-05-20.platforms.png)
 
 I hope you learned something! Ping me on [twitter](https://twitter.com/khyperia) if you have any questions or comments!
 
