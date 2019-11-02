@@ -1,15 +1,15 @@
 SHELL:=/bin/bash
-source_files:=$(shell find . -type l -o -type f -a \( -name '*.md' -o -name '*.css' -o -name '*.txt' -o -name '*.jpg' -o -name '*.png' -o -name '*.bmp' -o -name '*.ico' \) )
-kept_html_files:=$(shell find ./mlpds ./spacerunner4 ./acefrom.space -type f \( -name '*.html' -o -name '*.js' \))
-f_files:=$(shell find ./f -type f)
-built_files:=$(source_files:.md=.html) $(kept_html_files) $(f_files)
+md_files:=$(shell find . -type f -a -name '*.md')
+built_html_files:=$(source_files:.md=.html) fractals.html
 dest_folder:=/srv/http
+excluded:=--exclude=*.md --exclude=.*
+rsync_args:=--verbose --copy-links --times --recursive --delete --delete-excluded --link-dest=$(PWD) $(excluded)
 
 .PHONY: all clean install diff
 
 title = $(if $(subst /index,,/$(1)),$(subst /index,,/$(1)),khyperia.com)
 
-all: $(built_files)
+all: $(built_html_files)
 
 %.html: %.md Makefile
 	@echo "$< -> $@"
@@ -17,10 +17,7 @@ all: $(built_files)
 
 install: all | $(dest_folder)
 	@echo Invoking sudo to copy files...
-	sudo rsync --verbose --copy-links --times --relative --recursive --delete --delete-excluded --dry-run --link-dest=$$PWD $(built_files) $(dest_folder)
-
-diff:
-	comm -3 <(cd $(dest_folder); find . -not -type d | sort) <(printf '%s\n' $(built_files) | sort)
+	sudo rsync $(rsync_args) $(PWD)/ $(dest_folder)
 
 #sed 's/!\[](\(.*\)\/\(.*\))/[![](\/image\/\2)](\1\/\2)/' -i $(shell find . -type f -name '*.md')
 
