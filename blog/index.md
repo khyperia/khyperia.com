@@ -7,3 +7,4 @@ Khyperia's coding adventures!
 * [C and GCC compiler errors puzzle](c-puzzle.html)
 * [Types and values](types-values.html)
 * [Building Roslyn on Arch Linux](roslyn-linux.html)
+* [Big-O notation is (very, very rarely) useful! wau!](big-o-usefulness.html)
