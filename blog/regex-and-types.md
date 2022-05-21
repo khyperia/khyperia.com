@@ -1,7 +1,7 @@
 Understanding the relationship between values, types, and kinds using an analogy to regexes
 ===
 
-So what's all this fuss about values and types? I've [written about the relationship before](https://khyperia.github.io/2016/03/01/types-values.html), so obviously I'm at least slightly insane for really liking the relationship between the two.
+So what's all this fuss about values and types? I've [written about the relationship before](types-values.html), so obviously I'm at least slightly insane for really liking the relationship between the two.
 
 Here we go again:
 

@@ -38,4 +38,4 @@ However, this solution is difficult to use in practice, as most modern programmi
 
 ---
 
-If you'd like to hear more of my thoughts on types, the ideas I wrote in this post are fairly closely related to the ideas in my post about [Types and Values](http://khyperia.github.io/2016/03/01/types-values.html)
+If you'd like to hear more of my thoughts on types, the ideas I wrote in this post are fairly closely related to the ideas in my post about [Types and Values](types-values.html)

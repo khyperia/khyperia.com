@@ -9,7 +9,7 @@ mount /dev/the_linux /mnt
 mkdir /mnt/boot
 mount /dev/the_efi /mnt/boot
 > /etc/pacman.d/mirrorlist
-pacstrap /mnt base base-devel aspell-en bind-tools btrfs-progs git intel-ucode mosh neovim openssh pass pkgfile python rsync tmux unison wpa_supplicant zsh
+pacstrap /mnt base base-devel aspell-en bind-tools btrfs-progs git intel-ucode mosh neovim openssh pass pkgfile python rsync tmux unison fish
 genfstab -U /mnt > /mnt/etc/fstab
 > 'noatime' to fstab mount options
 cp arch.txt /mnt/root
@@ -21,18 +21,17 @@ bootctl install
 locale-gen
 > /etc/locale.conf -> LANG=en_US.UTF-8
 > /etc/hostname -> :)
-> wpa_supplicant-wifi.conf
-> 10-wifi.link
-> wifi.network
+> /etc/systemd/network/10-eth.link
+> /etc/systemd/network/eth.network
+> /etc/systemd/journald.conf
 systemctl enable --now fstrim.timer
 systemctl enable --now systemd-networkd
 systemctl enable --now systemd-resolved
-systemctl enable --now wpa_supplicant@wifi
 ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
-ln -s /run/systemd/resolve/resolve.conf /etc/resolv.conf
+ln -s /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 timedatectl set-ntp 1
 passwd
-useradd -m -s /usr/bin/zsh -G wheel,tty,disk,uucp,video,audio,input khyperia
+useradd -m -s /usr/bin/fish -G wheel,tty,disk,uucp,video,audio,input khyperia
 passwd khyperia
 EDITOR=nvim visudo
 > %wheel ALL=(ALL) ALL
@@ -43,22 +42,6 @@ scp -P port -r 'khyperia@khyperia.com:.ssh' .ssh
 mkdir .unison
 scp 'carbon:.unison/*.*' .unison/
 unison
-
----
-/etc/wpa_supplicant/wpa_supplicant-wifi.conf
----
-ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=wheel
-update_config=1
-
-network={
-        ssid="MichiganTech"
-        key_mgmt=WPA-EAP
-        eap=PEAP
-        identity=""
-        password=""
-        phase2="auth=MSCHAPV2"
-}
----
 
 /boot/loader/entries/arch.conf
 ---
@@ -71,26 +54,26 @@ options root=LABEL=linux rw
 optional option: nvidia-drm.modeset=1
 
 ---
-/etc/systemd/network/10-wifi.link
+/etc/systemd/network/10-eth.link
 ---
 [Match]
 MACAddress=d0:7e:35:88:c0:f2
 [Link]
-Name=wifi
+Name=eth
 ---
 
 ---
-/etc/systemd/network/wifi.network
+/etc/systemd/network/eth.network
 ---
 [Match]
-Name=wifi
+Name=eth
 [Network]
 DHCP=yes
 ---
 
 ---
-/etc/pacman.d/mirrorlist
+/etc/systemd/journald.conf
 ---
-Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch
-#Server = https://lug.mtu.edu/archlinux/$repo/os/$arch
+[Journal]
+SystemMaxUse=100M
 ---
