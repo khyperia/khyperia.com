@@ -1,6 +1,6 @@
 SHELL:=/bin/bash
 md_files:=$(shell find . -type f -a -name '*.md')
-built_html_files:=$(source_files:.md=.html) fractals.html
+built_html_files:=$(md_files:.md=.html) fractals.html
 dest_folder:=/srv/http
 excluded:=--exclude=*.md --exclude=.*
 rsync_args:=--verbose --copy-links --times --recursive --delete --delete-excluded --link-dest=$(PWD) $(excluded)
@@ -13,7 +13,7 @@ all: $(built_html_files)
 
 %.html: %.md Makefile
 	@echo "$< -> $@"
-	@(echo "<html>"; TITLE="&#10084; $(call title,$*)" envsubst < head.template; echo "<body>"; markdown $<; echo "</body>"; echo "</html>") > $@
+	@(echo "<html>"; TITLE="&#10084; $(call title,$*)" envsubst < head.template; echo "<body>"; pandoc $<; echo "</body>"; echo "</html>") > $@
 
 install: all | $(dest_folder)
 	@echo Invoking sudo to copy files...

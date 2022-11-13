@@ -5,14 +5,15 @@ I work at Resolution in Stockholm on VR games! I have some compiler experience i
 You can find me lots of places. Chances are, if you find a wild khyperia somewhere, it's me. Here are some common ones:
 
 * Twitter: [@khyperia](https://twitter.com/khyperia)
+* Mastodon: [@khyperia@mas.to](https://mas.to/@khyperia)
+* Cohost: [khyperia](https://cohost.org/khyperia)
 * Github: [khyperia](https://github.com/khyperia)
 * Email: web&#128293;khyperia.com
 
 Some things about myself:
 
 * Fractals are cool. Raytracers are cool. Put them together and you have a project I've been working on since 2011!
-* Extremely gay &#127752;
 * I love pretty much anything space-related, and do astrophotography!
-* I try to live by "treat others the way they want to be treated", and am happy when people point out if and when I forget that. Unless you're a jerk. Then you have no right to call me a jerk. Respect me and I'll respect you in return &#10084;
+* Extremely gay &#127752;, ace, and anxious
 
 Have a beautiful day!
