@@ -164,7 +164,7 @@ def space(f):
     header(f, "space")
     for basepath in spacephotos:
         imagepath = "image/" + basepath
-        fullpath = "fractals/" + basepath
+        fullpath = "space/" + basepath
         f.write("<code>" + basepath + "</code> <a href=\"" + fullpath + "\"><img src=\"" + imagepath + "\" /></a>")
         if not os.path.isfile(imagepath):
             print("convert " + fullpath + " to " + imagepath)
