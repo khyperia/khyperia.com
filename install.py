@@ -134,6 +134,10 @@ body {
 a {
     text-decoration: none;
 }
+
+img {
+    max-width: 100%
+}
 </style>
 </head>
 <body>""")
@@ -146,9 +150,9 @@ def fractals(f):
     f.write("""<p>Yay, fractals! Hopefully your browser doesn’t explode displaying this page.</p> <p>These were rendered by various versions of my fractal raytracing program. <a href="https://imgur.com/a/rmM4v">More fractals are located here.</a></p>""")
     files = os.listdir("fractals")
     files.sort(reverse=True)
-    for f in files:
-        imagepath = "image/" + f
-        fullpath = "fractals/" + f
+    for file in files:
+        imagepath = "image/" + file
+        fullpath = "fractals/" + file
         f.write("<p><a href=\"" + fullpath + "\"><img src=\"" + imagepath + "\" /></a></p> <hr />")
         if not os.path.isfile(imagepath):
             print("convert " + fullpath + " to " + imagepath)
