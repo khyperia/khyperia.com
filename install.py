@@ -114,8 +114,8 @@ spacephotos = [
     "Unknown_early/AlbireoAB_1.bmp"
 ]
 
-def header(f, title):
-    f.write("""<!DOCTYPE html>
+def header(title):
+    return """<!DOCTYPE html>
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -140,41 +140,53 @@ img {
 }
 </style>
 </head>
-<body>""")
+<body>"""
 
-def footer(f):
-    f.write("""</body></html>""")
+def footer():
+    return """</body></html>"""
 
-def fractals(f):
-    header(f, "fractals")
-    f.write("""<p>Yay, fractals! Hopefully your browser doesn’t explode displaying this page.</p> <p>These were rendered by various versions of my fractal raytracing program. <a href="https://imgur.com/a/rmM4v">More fractals are located here.</a></p>""")
+def fractals():
+    content = header("fractals")
+    content += """<p>Yay, fractals! Hopefully your browser doesn't explode displaying this page.</p> <p>These were rendered by various versions of my fractal raytracing program. <a href="https://imgur.com/a/rmM4v">More fractals are located here.</a></p>"""
     files = os.listdir("fractals")
     files.sort(reverse=True)
     for file in files:
         imagepath = "image/" + file
         fullpath = "fractals/" + file
-        f.write("<p><a href=\"" + fullpath + "\"><img src=\"" + imagepath + "\" /></a></p> <hr />")
+        content += "<p><a href=\"" + fullpath + "\"><img src=\"" + imagepath + "\" /></a></p> <hr />"
         if not os.path.isfile(imagepath):
             print("convert " + fullpath + " to " + imagepath)
             subprocess.run(["convert", fullpath, "-resize", "750x-1", imagepath])
-    f.write("""<p>The fractals rendered by me, on this page, and the above imgur album, are under the <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.</p>""")
-    footer(f)
+    content += """<p>The fractals rendered by me, on this page, and the above imgur album, are under the <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.</p>"""
+    content += footer()
+    return content
 
-def space(f):
-    header(f, "space")
+def space():
+    content = header("space")
     for basepath in spacephotos:
         imagepath = "image/" + basepath
         fullpath = "space/" + basepath
-        f.write("<code>" + basepath + "</code> <a href=\"" + fullpath + "\"><img src=\"" + imagepath + "\" /></a>")
+        content += "<code>" + basepath + "</code> <a href=\"" + fullpath + "\"><img src=\"" + imagepath + "\" /></a>"
         if not os.path.isfile(imagepath):
             print("convert " + fullpath + " to " + imagepath)
             subprocess.run(["convert", fullpath, "-resize", "750x-1", imagepath])
-    footer(f)
+    content += footer()
+    return content
 
-with open("fractals.html", "w") as f:
-    fractals(f)
+def readall(f):
+    with open(f, "r") as file:
+        return file.read()
 
-with open("space.html", "w") as f:
-    space(f)
+def writeall(f, s):
+    with open(f, "w") as file:
+        file.write(s)
+
+def writediff(f, s):
+    if readall(f) != s:
+        print("Writing " + f)
+        writeall(f, s)
+
+writediff("fractals.html", fractals())
+writediff("space.html", space())
 
 subprocess.run(["sudo", "rsync", "--verbose", "--copy-links", "--times", "--recursive", "--delete", "--delete-excluded", "--link-dest=.", "--exclude=.*", "./", "/srv/http"])
