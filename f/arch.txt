@@ -1,4 +1,4 @@
-file /sys/firmware/efi/efivars
+cat /sys/firmware/efi/fw_platform_size
 lsblk
 cgdisk
 > EFI 512 MiB, "EFI System" (EF00)
@@ -9,32 +9,32 @@ mount /dev/the_linux /mnt
 mkdir /mnt/boot
 mount /dev/the_efi /mnt/boot
 > /etc/pacman.d/mirrorlist
-pacstrap /mnt base base-devel aspell-en bind-tools btrfs-progs git intel-ucode mosh neovim openssh pass pkgfile python rsync tmux unison fish
+pacstrap /mnt base base-devel linux linux-firmware btrfs-progs intel-ucode seatd neovim openssh unison git fish
 genfstab -U /mnt > /mnt/etc/fstab
 > 'noatime' to fstab mount options
 cp arch.txt /mnt/root
 arch-chroot /mnt
 bootctl install
+systemctl enable --now systemd-boot-update
 > /boot/loader/entries/arch.conf
 > /boot/loader/loader.conf -> default arch
 > /etc/locale.gen -> en_US.UTF-8 UTF-8
 locale-gen
+ALT: localectl set-locale en_US.UTF-8
 > /etc/locale.conf -> LANG=en_US.UTF-8
 > /etc/hostname -> :)
-> /etc/systemd/network/10-eth.link
-> /etc/systemd/network/eth.network
-> /etc/systemd/journald.conf
+> desired files below
 systemctl enable --now fstrim.timer
 systemctl enable --now systemd-networkd
 systemctl enable --now systemd-resolved
+systemctl enable --now seatd
 ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
 ln -s /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 timedatectl set-ntp 1
 passwd
-useradd -m -s /usr/bin/fish -G wheel,tty,disk,uucp,video,audio,input khyperia
+useradd -m -s /usr/bin/fish -G wheel,seat,tty,disk,uucp,video,audio,input khyperia
 passwd khyperia
-EDITOR=nvim visudo
-> %wheel ALL=(ALL) ALL
+> /etc/sudoers.d/wheel
 cp arch.txt /mnt/home/khyperia
 chown khyperia:khyperia /mnt/home/khyperia/arch.txt
 sudo -u khyperia -i
@@ -42,6 +42,27 @@ scp -P port -r 'khyperia@khyperia.com:.ssh' .ssh
 mkdir .unison
 scp 'carbon:.unison/*.*' .unison/
 unison
+
+---
+/etc/sudoers.d/wheel
+---
+%wheel ALL=(ALL) ALL
+---
+
+---
+wifi:
+sudo pacman -S linux-firmware-marvell # needed for surface book, other firmware maybe needed
+iwctl
+# device list
+# station wlan0 scan
+# station wlan0 get-networks
+# station wlan0 connect "ssid"
+---
+/etc/iwd/main.conf
+---
+[General]
+EnableNetworkConfiguration=true
+---
 
 /boot/loader/entries/arch.conf
 ---
@@ -51,7 +72,6 @@ initrd /intel-ucode.img
 initrd /initramfs-linux.img
 options root=LABEL=linux rw
 ---
-optional option: nvidia-drm.modeset=1
 
 ---
 /etc/systemd/network/10-eth.link
@@ -72,8 +92,23 @@ DHCP=yes
 ---
 
 ---
-/etc/systemd/journald.conf
+/etc/systemd/journald.conf.d/SystemMaxUse.conf
 ---
 [Journal]
 SystemMaxUse=100M
+---
+
+---
+/etc/makepkg.conf.d/makeflags.conf
+---
+MAKEFLAGS="-j32"
+---
+
+get rates via `cat /proc/asound/card*/stream*` - be careful about multiple cards!
+---
+/etc/pipewire/pipewire.conf.d/10-allowed-rates.conf
+---
+context.properties = {
+	default.clock.allowed-rates = [ 44100, 48000, 88200, 96000, 176400, 192000 ]
+}
 ---
