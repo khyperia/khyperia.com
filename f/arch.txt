@@ -18,10 +18,10 @@ bootctl install
 systemctl enable --now systemd-boot-update
 > /boot/loader/entries/arch.conf
 > /boot/loader/loader.conf -> default arch
-> /etc/locale.gen -> en_US.UTF-8 UTF-8
+> /etc/locale.gen -> en_SE.UTF-8 UTF-8
 locale-gen
-ALT: localectl set-locale en_US.UTF-8
-> /etc/locale.conf -> LANG=en_US.UTF-8
+ALT: localectl set-locale en_SE.UTF-8
+> /etc/locale.conf -> LANG=en_SE.UTF-8
 > /etc/hostname -> :)
 > desired files below
 systemctl enable --now fstrim.timer
@@ -70,23 +70,15 @@ title Arch Linux
 linux /vmlinuz-linux
 initrd /intel-ucode.img
 initrd /initramfs-linux.img
-options root=LABEL=linux rw
----
-
----
-/etc/systemd/network/10-eth.link
----
-[Match]
-MACAddress=d0:7e:35:88:c0:f2
-[Link]
-Name=eth
+options consoleblank=300 root=LABEL=linux rw
 ---
 
 ---
 /etc/systemd/network/eth.network
 ---
 [Match]
-Name=eth
+# en* matches all ethernet links
+Name=en*
 [Network]
 DHCP=yes
 ---
@@ -102,6 +94,14 @@ SystemMaxUse=100M
 /etc/makepkg.conf.d/makeflags.conf
 ---
 MAKEFLAGS="-j32"
+---
+
+---
+/etc/ssh/sshd_config.d/50-ashley.conf
+---
+Port 23185
+PasswordAuthentication no
+KbdInteractiveAuthentication no
 ---
 
 get rates via `cat /proc/asound/card*/stream*` - be careful about multiple cards!
